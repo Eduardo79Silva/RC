@@ -1,7 +1,5 @@
 # RC
 
-# _{Application Name}_
-
 #### By _**Diogo Neves & Eduardo Silva**_
 
 #### _Repository for the 2 lab projects being developed in Computer Networks class_
