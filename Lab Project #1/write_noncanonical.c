@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
     // The whole buffer must be sent even with the '\n'.
 
     int bytes = write(fd, buf, BUF_SIZE);
-    printf("%d bytes written\n", bytes);
+    printf("%d bytes written\n", strlen(buf));
 
     // Wait until all bytes have been written to the serial port
     sleep(1);
