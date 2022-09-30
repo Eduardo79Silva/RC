@@ -10,7 +10,6 @@
 #include <sys/stat.h>
 #include <termios.h>
 #include <unistd.h>
-#include "link_layer.h"
 
 // Baudrate settings are defined in <asm/termbits.h>, which is
 // included by <termios.h>
@@ -41,7 +40,8 @@ int main(int argc, char *argv[])
 
     // Open serial port device for reading and writing, and not as controlling tty
     // because we don't want to get killed if linenoise sends CTRL-C.
-    int fd = llopen(serialPortName, )
+    int fd = open(serialPortName, O_RDWR | O_NOCTTY);
+
     if (fd < 0)
     {
         perror(serialPortName);
@@ -68,7 +68,7 @@ int main(int argc, char *argv[])
     // Set input mode (non-canonical, no echo,...)
     newtio.c_lflag = 0;
     newtio.c_cc[VTIME] = 0; // Inter-character timer unused
-    newtio.c_cc[VMIN] = 1;  // Blocking read until 5 chars received
+    newtio.c_cc[VMIN] = 5;  // Blocking read until 5 chars received
 
     // VTIME e VMIN should be changed in order to protect with a
     // timeout the reception of the following character(s)
@@ -89,27 +89,24 @@ int main(int argc, char *argv[])
 
     printf("New termios structure set\n");
 
-    //WRITE------
     // Create string to send
     unsigned char buf[BUF_SIZE] = {0};
 
-    printf("Enter a string : \n");
-    gets(buf);
-
-    printf("\nYou entered: %s\n", buf);
+    for (int i = 0; i < BUF_SIZE; i++)
+    {
+        buf[i] = 'a' + i % 26;
+    }
 
     // In non-canonical mode, '\n' does not end the writing.
     // Test this condition by placing a '\n' in the middle of the buffer.
     // The whole buffer must be sent even with the '\n'.
+    buf[5] = '\n';
 
     int bytes = write(fd, buf, BUF_SIZE);
-    printf("%d bytes written\n", strlen(buf));
+    printf("%d bytes written\n", bytes);
 
     // Wait until all bytes have been written to the serial port
     sleep(1);
-
-
-    //CLOSE------
 
     // Restore the old port settings
     if (tcsetattr(fd, TCSANOW, &oldtio) == -1)

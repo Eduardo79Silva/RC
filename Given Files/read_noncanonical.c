@@ -1,4 +1,4 @@
-// Write to serial port in non-canonical mode
+// Read from serial port in non-canonical mode
 //
 // Modified by: Eduardo Nuno Almeida [enalmeida@fe.up.pt]
 
@@ -10,7 +10,6 @@
 #include <sys/stat.h>
 #include <termios.h>
 #include <unistd.h>
-#include "link_layer.h"
 
 // Baudrate settings are defined in <asm/termbits.h>, which is
 // included by <termios.h>
@@ -39,9 +38,9 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    // Open serial port device for reading and writing, and not as controlling tty
+    // Open serial port device for reading and writing and not as controlling tty
     // because we don't want to get killed if linenoise sends CTRL-C.
-    int fd = llopen(serialPortName, )
+    int fd = open(serialPortName, O_RDWR | O_NOCTTY);
     if (fd < 0)
     {
         perror(serialPortName);
@@ -68,7 +67,7 @@ int main(int argc, char *argv[])
     // Set input mode (non-canonical, no echo,...)
     newtio.c_lflag = 0;
     newtio.c_cc[VTIME] = 0; // Inter-character timer unused
-    newtio.c_cc[VMIN] = 1;  // Blocking read until 5 chars received
+    newtio.c_cc[VMIN] = 5;  // Blocking read until 5 chars received
 
     // VTIME e VMIN should be changed in order to protect with a
     // timeout the reception of the following character(s)
@@ -89,27 +88,22 @@ int main(int argc, char *argv[])
 
     printf("New termios structure set\n");
 
-    //WRITE------
-    // Create string to send
-    unsigned char buf[BUF_SIZE] = {0};
+    // Loop for input
+    unsigned char buf[BUF_SIZE + 1] = {0}; // +1: Save space for the final '\0' char
 
-    printf("Enter a string : \n");
-    gets(buf);
+    while (STOP == FALSE)
+    {
+        // Returns after 5 chars have been input
+        int bytes = read(fd, buf, BUF_SIZE);
+        buf[bytes] = '\0'; // Set end of string to '\0', so we can printf
 
-    printf("\nYou entered: %s\n", buf);
+        printf(":%s:%d\n", buf, bytes);
+        if (buf[0] == 'z')
+            STOP = TRUE;
+    }
 
-    // In non-canonical mode, '\n' does not end the writing.
-    // Test this condition by placing a '\n' in the middle of the buffer.
-    // The whole buffer must be sent even with the '\n'.
-
-    int bytes = write(fd, buf, BUF_SIZE);
-    printf("%d bytes written\n", strlen(buf));
-
-    // Wait until all bytes have been written to the serial port
-    sleep(1);
-
-
-    //CLOSE------
+    // The while() cycle should be changed in order to respect the specifications
+    // of the protocol indicated in the Lab guide
 
     // Restore the old port settings
     if (tcsetattr(fd, TCSANOW, &oldtio) == -1)
