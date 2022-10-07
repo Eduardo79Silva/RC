@@ -54,3 +54,14 @@ int llopen(int porta, int flagRole){
     return fd;
 
 }
+
+int llclose(){
+    if (tcsetattr(fd, TCSANOW, &oldtio) == -1){
+        perror("tcsetattr");
+        exit(-1);
+    }
+
+    close(fd);
+
+    return 0;
+}
