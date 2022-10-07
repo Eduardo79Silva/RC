@@ -20,3 +20,5 @@ struct linkLayer {
  */
 
 int llopen(int porta, int flagRole);
+
+int llclose();
