@@ -16,6 +16,73 @@
 struct termios oldtio;
 struct termios newtio;
 int fd = 0;
+volatile int STOP = FALSE;
+
+////////////////////////////////////////////////
+// STATE MACHINE
+////////////////////////////////////////////////
+
+int stateMachine(char *buffer, int length, u_int16_t ctrl)
+{
+    int currentByte = 0;
+
+    int state = 0; // 0 = Start; 1 = FLAG; 2 = A; 3 = C; 4 = BCC; 5 = STOP
+
+    while (currentByte < length)
+    {
+        switch (state)
+        {
+        case 0:
+            if (buffer[currentByte] == FLAG)
+            {
+                state = 1;
+            }
+            currentByte++;
+            break;
+        case 1:
+            if (buffer[currentByte] == A)
+                state = 2;
+            else if (buffer[currentByte] != FLAG)
+                state = 0;
+            
+            currentByte++;
+            break;
+        case 2:
+            if (buffer[currentByte] == ctrl)
+                state = 3;
+            else if (buffer[currentByte] == FLAG)
+                state = 1;
+            else
+                state = 0;
+
+            currentByte++;
+            break;
+
+        case 3:
+            if (buffer[currentByte] == buffer[currentByte - 1] ^ buffer[currentByte - 2])
+                state = 4;
+            else if (buffer[currentByte] == FLAG)
+                state = 1;
+            else
+                state = 0;
+
+            currentByte++;
+            break;
+
+        case 4:
+            if (buffer[currentByte] == FLAG)
+                return TRUE;
+            else
+                state = 0;
+
+            currentByte++;
+            break;
+
+        default:
+            break;
+        }
+    }
+}
 
 ////////////////////////////////////////////////
 // LLOPEN
@@ -30,9 +97,7 @@ int llopen(LinkLayer connectionParameters)
         exit(-1);
     }
 
-    
-
-    // Save current port settings
+        // Save current port settings
     if (tcgetattr(fd, &oldtio) == -1)
     {
         perror("tcgetattr");
@@ -79,7 +144,6 @@ int llopen(LinkLayer connectionParameters)
 int llwrite(const unsigned char *buf, int bufSize)
 {
     // Create string to send
-    unsigned char buf[256] = {0};
 
     printf("Enter a string : \n");
     gets(buf);
@@ -104,7 +168,22 @@ int llwrite(const unsigned char *buf, int bufSize)
 ////////////////////////////////////////////////
 int llread(unsigned char *packet)
 {
-    // TODO
+    // Loop for input
+    unsigned char buf[256 + 1] = {0}; // +1: Save space for the final '\0' char
+
+    while (STOP == FALSE)
+    {
+        // Returns after 5 chars have been input
+        int bytes = read(fd, buf, 256);
+        buf[bytes] = '\0'; // Set end of string to '\0', so we can printf
+
+        printf(":%s:%d\n", buf, bytes);
+        if (buf[0] == 'z')
+            STOP = TRUE;
+    }
+
+    // The while() cycle should be changed in order to respect the specifications
+    // of the protocol indicated in the Lab guide
 
     return 0;
 }
