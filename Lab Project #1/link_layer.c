@@ -1,4 +1,34 @@
 #include "link_layer.h"
+#include "macros.h"
+
+
+int stateMachine(char* buffer, int length, u_int16_t ctrl){
+    int currentByte = 0;
+    
+    int state = 0;//0 = Start; 1 = FLAG; 2 = A; 3 = C; 4 = BCC; 5 = STOP
+
+
+    while(currentByte < length){
+        switch (state)
+        {
+        case 0:
+            if(buffer[currentByte] == FLAG){
+                state = 1;
+            }
+            currentByte++;
+            break;
+        case 1:
+            if(buffer[currentByte] == A){
+                
+            }
+        default:
+            break;
+        }
+    }
+
+
+}
+
 
 
 int llopen(int porta, int flagRole){
