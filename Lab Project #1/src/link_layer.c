@@ -16,92 +16,44 @@
 struct termios oldtio;
 struct termios newtio;
 int fd = 0;
-volatile int STOP = FALSE;
 
 ////////////////////////////////////////////////
-// STATE MACHINE
+// FRAME BUILDER
 ////////////////////////////////////////////////
 
-int stateMachine(char *buffer, int length, u_int16_t ctrl)
+void frame(u_int16_t byteOne, u_int16_t byteTwo, u_int16_t byteThree, u_int16_t byteFour, u_int16_t byteFive, char buffer[])
 {
-    int currentByte = 0;
-
-    int state = 0; // 0 = Start; 1 = FLAG; 2 = A; 3 = C; 4 = BCC; 5 = STOP
-
-    while (currentByte < length)
-    {
-        switch (state)
-        {
-        case 0:
-            if (buffer[currentByte] == FLAG)
-            {
-                state = 1;
-            }
-            currentByte++;
-            break;
-        case 1:
-            if (buffer[currentByte] == A)
-                state = 2;
-            else if (buffer[currentByte] != FLAG)
-                state = 0;
-            
-            currentByte++;
-            break;
-        case 2:
-            if (buffer[currentByte] == ctrl)
-                state = 3;
-            else if (buffer[currentByte] == FLAG)
-                state = 1;
-            else
-                state = 0;
-
-            currentByte++;
-            break;
-
-        case 3:
-            if (buffer[currentByte] == buffer[currentByte - 1] ^ buffer[currentByte - 2])
-                state = 4;
-            else if (buffer[currentByte] == FLAG)
-                state = 1;
-            else
-                state = 0;
-
-            currentByte++;
-            break;
-
-        case 4:
-            if (buffer[currentByte] == FLAG)
-                return TRUE;
-            else
-                state = 0;
-
-            currentByte++;
-            break;
-
-        default:
-            break;
-        }
-    }
+    buffer[0] = byteOne;
+    buffer[1] = byteTwo;
+    buffer[2] = byteThree;
+    buffer[3] = byteFour;
+    buffer[4] = byteFive;
 }
+
 
 ////////////////////////////////////////////////
 // LLOPEN
 ////////////////////////////////////////////////
 int llopen(LinkLayer connectionParameters)
 {
+    printf("Opening connection %s \n", connectionParameters.serialPort);
+
+    unsigned char SET = {FLAG, A_TX, C_SET, A_TX ^ C_SET, FLAG};
+
     fd = open(connectionParameters.serialPort, O_RDWR | O_NOCTTY);
 
     if (fd < 0)
     {
         perror(connectionParameters.serialPort);
-        exit(-1);
+        return (-1);
     }
 
-        // Save current port settings
+    // Save current port settings
     if (tcgetattr(fd, &oldtio) == -1)
     {
+        printf("Error 1");
         perror("tcgetattr");
-        exit(-1);
+        return (-1);
     }
 
     // Clear struct for new port settings
@@ -114,7 +66,9 @@ int llopen(LinkLayer connectionParameters)
     // Set input mode (non-canonical, no echo,...)
     newtio.c_lflag = 0;
     newtio.c_cc[VTIME] = 0; // Inter-character timer unused
-    newtio.c_cc[VMIN] = 1;  // Blocking read until 5 chars received
+    newtio.c_cc[VMIN] = 5;  // Blocking read until 5 chars received
+
+
 
     // VTIME e VMIN should be changed in order to protect with a
     // timeout the reception of the following character(s)
@@ -129,11 +83,21 @@ int llopen(LinkLayer connectionParameters)
     // Set new port settings
     if (tcsetattr(fd, TCSANOW, &newtio) == -1)
     {
+        printf("Error 2");
         perror("tcsetattr");
-        exit(-1);
+        return (-1);
     }
 
     printf("New termios structure set\n");
+
+    if (connectionParameters.role == LlRx)
+    {
+        receiverStart(fd);
+    }
+    else
+    {
+        senderStart(fd);
+    }
 
     return 1;
 }
@@ -163,28 +127,17 @@ int llwrite(const unsigned char *buf, int bufSize)
     return 0;
 }
 
+
 ////////////////////////////////////////////////
 // LLREAD
 ////////////////////////////////////////////////
 int llread(unsigned char *packet)
 {
-    // Loop for input
-    unsigned char buf[256 + 1] = {0}; // +1: Save space for the final '\0' char
-
-    while (STOP == FALSE)
-    {
-        // Returns after 5 chars have been input
-        int bytes = read(fd, buf, 256);
-        buf[bytes] = '\0'; // Set end of string to '\0', so we can printf
-
-        printf(":%s:%d\n", buf, bytes);
-        if (buf[0] == 'z')
-            STOP = TRUE;
-    }
-
-    // The while() cycle should be changed in order to respect the specifications
-    // of the protocol indicated in the Lab guide
-
+    // Read string from serial port
+    int bytes = read(fd, packet, 256);
+    printf("%d bytes read : %s\n", bytes, packet);
+    
+   
     return 0;
 }
 
@@ -196,7 +149,7 @@ int llclose(int showStatistics)
     if (tcsetattr(fd, TCSANOW, &oldtio) == -1)
     {
         perror("tcsetattr");
-        exit(-1);
+        return(-1);
     }
 
     close(fd);
