@@ -8,31 +8,29 @@ int alarmEnabled = FALSE;
 int alarmCount = 0;
 
 // Alarm function handler
-void alarmHandler(int signal)
-{
+void alarmHandler(int signal){ // Alarm function handler, fires when the alarm is triggered
     alarmEnabled = FALSE;
     alarmCount++;
 
     printf("Alarm #%d\n", alarmCount);
 }
 
-void disableAlarm(int sig) {
+void disableAlarm(int sig) { // Called when UA response is received
     alarmEnabled = FALSE;
     alarmCount = 0;
     printf("Alarm disabled");
 }
 
 
-int startAlarm(unsigned int time) {
+int startAlarm(unsigned int time) { // Start alarm function
    
     printf("Alarm started\n");
 
     // Set alarm function handler
-    (void)signal(SIGALRM, alarmHandler);
-        if (alarmEnabled == FALSE)
-        {
+    (void)signal(SIGALRM, alarmHandler); 
+        if (alarmEnabled == FALSE) { // If the alarm hasn't been started yet
             alarm(time); 
-            alarmEnabled = TRUE;
+            alarmEnabled = TRUE; 
         }
 
 

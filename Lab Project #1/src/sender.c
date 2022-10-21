@@ -19,21 +19,21 @@ int sendSET(unsigned char *buf)
     return bytes;
 }
 
-int senderStart(int fd, int reCount)
+int senderStart(int fd, int reCount) 
 {
     localFD = fd;
-    nRetransmissions = reCount;
-    unsigned char buf[BUFSIZE] = {0};
+    nRetransmissions = reCount; // Number of retransmissions
+    unsigned char buf[BUFSIZE] = {0}; // Buffer to store the received data
 
-    while(nRetransmissions > 0){
+    while(nRetransmissions > 0){ // While there are retransmissions left and no UA flag has been received
         
-        if(!alarmEnabled){
-        sendSET(&buf);
-        startAlarm(5);
-        nRetransmissions--;
-    }
+        if(!alarmEnabled){ //If the alarm hasn't been started yet
+            sendSET(&buf); //Send SET command to the receiver
+            startAlarm(5); //Start alarm to wait for UA response
+            nRetransmissions--; //Decrement the number of retransmissions
+        }
 
-        if(receiveUA()) return 1;
+        if(receiveUA()) return 1; // If UA flag has been received, return 1 to indicate success and exit the function
     }
     
 
@@ -49,14 +49,13 @@ int receiveUA()
     if (buf != 0 && bytes > -1)
     {
         printf("Received %02x \n", buf[0]);
-        int ans = stateMachine(buf, BUFSIZE, C_UA);
+        int ans = stateMachine(buf, BUFSIZE, C_UA); // Check if the received data is a UA response
             printf("\nUA received\n");
-            disableAlarm();
+            disableAlarm(); // If it is, disable the alarm
         if (ans == 1)
         {
             return 1;
         }
-        
     }
     return 0;
 }

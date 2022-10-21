@@ -27,8 +27,8 @@ int fd = 0;
 // FRAME BUILDER
 ////////////////////////////////////////////////
 
-void frame(u_int16_t byteOne, u_int16_t byteTwo, u_int16_t byteThree, u_int16_t byteFour, u_int16_t byteFive, char buffer[])
-{
+void frame(u_int16_t byteOne, u_int16_t byteTwo, u_int16_t byteThree, u_int16_t byteFour, u_int16_t byteFive, char buffer[]){ // Builds a frame
+
     buffer[0] = byteOne;
     buffer[1] = byteTwo;
     buffer[2] = byteThree;
@@ -36,15 +36,15 @@ void frame(u_int16_t byteOne, u_int16_t byteTwo, u_int16_t byteThree, u_int16_t 
     buffer[4] = byteFive;
 }
 
-int fileTransferProtocol(){
-    
-}
-
 ////////////////////////////////////////////////
 // LLOPEN
 ////////////////////////////////////////////////
+
 int llopen(LinkLayer connectionParameters)
 {
+
+    // Open serial port device for reading and writing (Given by the professor)
+
    printf("Opening connection %s \n", connectionParameters.serialPort);
 
     fd = open(connectionParameters.serialPort, O_RDWR | O_NOCTTY | O_NONBLOCK);
@@ -86,6 +86,8 @@ int llopen(LinkLayer connectionParameters)
 
     printf("New termios structure set\n");
 
+    // Start either transmitter or receiver
+
     if (connectionParameters.role == LlRx) {
         if (!receiverStart(fd)) return -1;
     } else {
@@ -102,6 +104,7 @@ int llopen(LinkLayer connectionParameters)
 ////////////////////////////////////////////////
 // LLWRITE
 ////////////////////////////////////////////////
+
 int llwrite(const unsigned char *buf, int bufSize)
 {
     // Create string to send
@@ -128,6 +131,7 @@ int llwrite(const unsigned char *buf, int bufSize)
 ////////////////////////////////////////////////
 // LLREAD
 ////////////////////////////////////////////////
+
 int llread(unsigned char *packet)
 {
     
@@ -138,8 +142,10 @@ int llread(unsigned char *packet)
 ////////////////////////////////////////////////
 // LLCLOSE
 ////////////////////////////////////////////////
+
 int llclose(int showStatistics)
 {
+    // Close serial port (Given by the professor)
     if (tcsetattr(fd, TCSANOW, &oldtio) == -1)
     {
         perror("tcsetattr");
