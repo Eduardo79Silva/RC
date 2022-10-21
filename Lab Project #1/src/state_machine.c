@@ -32,7 +32,6 @@ int stateMachine(char *buffer, LinkLayerRole role) // State machine used to chec
             printf("State 0\n");
             if (buffer[currentByte] == FLAG) // Check if the received byte is a FLAG
             {
-                printf("FLAG received\n");
                 state = 1; // If it is, go to the next state else stay in the same state
             }
             currentByte++; // Read the next byte
@@ -49,6 +48,11 @@ int stateMachine(char *buffer, LinkLayerRole role) // State machine used to chec
             return 0;
         case 2: // A state
             printf("State 2\n");
+            printf("current: %d\n", buffer[0]);
+            printf("C: %d\n", buffer[1]);
+            printf("A: %d\n", buffer[2]);
+            printf("A: %d\n", buffer[3]);           
+            printf("A: %d\n", buffer[4]);
             if (buffer[currentByte] == ctrl) // Check if the received byte is the control byte
                 state = 3;
             else if (buffer[currentByte] == FLAG) // If it isn't, but if it is a FLAG go back to the FLAG state
@@ -61,7 +65,9 @@ int stateMachine(char *buffer, LinkLayerRole role) // State machine used to chec
 
         case 3: // C state
             printf("State 3\n");
-            if (buffer[currentByte] == buffer[currentByte - 1] ^ buffer[currentByte - 2]) // Check if the received byte is the BCC
+            
+            
+            if (buffer[currentByte] == (buffer[currentByte - 1] ^ buffer[currentByte - 2])) // Check if the received byte is the BCC
                 state = 4;
             else if (buffer[currentByte] == FLAG)
                 state = 1;

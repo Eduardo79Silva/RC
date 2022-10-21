@@ -6,4 +6,4 @@ int sendSET(unsigned char *buf);
 
 int senderStart(int fd, int reCount);
 
-int receiveUA();
+int receiveUA(int fd);

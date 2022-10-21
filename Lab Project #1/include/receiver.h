@@ -1,7 +1,7 @@
 #include "macros.h"
 #include "state_machine.h"
 
-int receiverStart(int fd, int reCount);
+int receiverStart(int fd);
 
 int sendUA();
 

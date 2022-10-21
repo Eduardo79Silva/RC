@@ -13,7 +13,7 @@ void sendUA(unsigned char *res){
     res[0] = FLAG; // FLAG
     res[1] = A_TX; // A
     res[2] = C_UA; // C
-    res[3] = BCC(A_RX, C_UA); // BCC
+    res[3] = BCC(res[1], res[2]); // BCC
     res[4] = FLAG; // FLAG
 
     int bytes = write(localFD, res, 5);

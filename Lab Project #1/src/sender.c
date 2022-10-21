@@ -7,7 +7,31 @@ int nRetransmissions;
 int STOPS = 0;
 
 
+int receiveUA(int fd)
+{
 
+    unsigned char buffer[BUFSIZE] = {0};
+    unsigned char buffer2[BUFSIZE] = {0};
+
+    while(STOPS == FALSE){
+        int bytes = read(fd, buffer, 1);
+        //printf("Received %d \n", bytes);
+        //printf("Entered while\n");
+        if (buffer != 0 && bytes > -1)
+        {
+            printf("Received %02x \n", buffer[0]);
+            int ans = stateMachine(buffer, LlTx); // Check if the received data is a UA response
+            if (ans == 1)
+            {
+                printf("\nUA received\n");
+                disableAlarm(); // If it is, disable the alarm
+                STOPS = TRUE;
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
 
 int sendSET(unsigned char *buf)
 {
@@ -36,7 +60,7 @@ int senderStart(int fd, int reCount)
             nRetransmissions--; //Decrement the number of retransmissions
         }
 
-        if(receiveUA()) return 1; // If UA flag has been received, return 1 to indicate success and exit the function
+        if(receiveUA(fd)) return 1; // If UA flag has been received, return 1 to indicate success and exit the function
     }
     
 
@@ -44,30 +68,13 @@ int senderStart(int fd, int reCount)
     
 }
 
-int receiveUA()
-{
-    unsigned char buf[BUFSIZE] = {0};
 
-        int bytes = read(localFD, buf, 5);
-        printf("Received %d \n", localFD);
-    while(STOPS == FALSE){
-        //printf("Entered while\n");
-        if (buf != 0 && bytes > -1)
-        {
-            printf("Received %02x \n", buf[0]);
-            int ans = stateMachine(buf, LlTx); // Check if the received data is a UA response
-            printf("Answer: %d\n", ans);
-            if (ans == 1)
-            {
-                printf("\nUA received\n");
-                disableAlarm(); // If it is, disable the alarm
-                STOPS = TRUE;
-                return 1;
-            }
-        }
-    }
-    return 0;
-}
+// buffer [03,0,0,0,0]
+// buffer2 [7e,03,07,04,0]
+
+// buffer2[2]= buffer[0]
+
+// statemachine(buffer[0], buffer2)
 
 
 
