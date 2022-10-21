@@ -25,21 +25,16 @@ void disableAlarm(int sig) {
 
 int startAlarm(unsigned int time) {
    
-
+    printf("Alarm started\n");
 
     // Set alarm function handler
     (void)signal(SIGALRM, alarmHandler);
-
-    while (alarmCount < 4)
-    {
         if (alarmEnabled == FALSE)
         {
             alarm(time); 
             alarmEnabled = TRUE;
         }
-    }
 
-    printf("Ending program\n");
 
     return 0;
 }

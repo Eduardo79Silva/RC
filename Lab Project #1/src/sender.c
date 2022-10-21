@@ -1,27 +1,66 @@
 #include "macros.h"
+#include "alarm.h"
 
-int sendSET(int fd, unsigned char *msg)
+int localFD;
+int nRetransmissions;
+
+
+
+int sendSET(unsigned char *buf)
 {
-    msg[0] = 0x7E; // FLAG
-    msg[1] = 0x03; // A
-    msg[2] = 0x03; // C
-    msg[3] = 0x00; // BCC
-    msg[4] = 0x7E; // FLAG
+    buf[0] = FLAG; // FLAG
+    buf[1] = A_TX; // A
+    buf[2] = C_SET; // C
+    buf[3] = BCC(buf[1], buf[2]); // BCC
+    buf[4] = FLAG; // FLAG
 
-    int bytes = write(fd, msg, 5);
+    int bytes = write(localFD, buf, 5);
     printf("SET flag sent, %d bytes written\n", bytes);
     return bytes;
 }
 
-int senderStart(int fd)
+int senderStart(int fd, int reCount)
+{
+    localFD = fd;
+    nRetransmissions = reCount;
+    unsigned char buf[BUFSIZE] = {0};
+
+    while(nRetransmissions > 0){
+        
+        if(!alarmEnabled){
+        sendSET(&buf);
+        startAlarm(5);
+        nRetransmissions--;
+    }
+
+        if(receiveUA()) return 1;
+    }
+    
+
+    return 0;
+    
+}
+
+int receiveUA()
 {
     unsigned char buf[BUFSIZE] = {0};
 
-    sendSET(fd, &buf);
-
-    return 1;
-    
+    int bytes = read(localFD, buf, 5);
+    if (buf != 0 && bytes > -1)
+    {
+        printf("Received %02x \n", buf[0]);
+        int ans = stateMachine(buf, BUFSIZE, C_UA);
+            printf("\nUA received\n");
+            disableAlarm();
+        if (ans == 1)
+        {
+            return 1;
+        }
+        
+    }
+    return 0;
 }
+
 
 
 // void byteDestuffing(unsigned char *buffer, int length)

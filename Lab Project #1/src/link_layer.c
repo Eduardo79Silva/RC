@@ -89,7 +89,7 @@ int llopen(LinkLayer connectionParameters)
     if (connectionParameters.role == LlRx) {
         if (!receiverStart(fd)) return -1;
     } else {
-        if (!senderStart(fd)){
+        if (!senderStart(fd, connectionParameters.nRetransmissions)){
             printf("Error sending data\n");
          return -1;
         }

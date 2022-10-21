@@ -9,6 +9,7 @@
 #define CREJ 0x01
 #define FLAG 0x7E
 #define ESC 0x7D
+#define BCC(x, y) (x^y)
 
 #define FALSE 0
 #define TRUE 1
