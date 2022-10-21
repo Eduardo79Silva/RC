@@ -11,8 +11,14 @@
 #include "link_layer.h"
 #include "macros.h"
 
-// MISC
+#define BAUDRATE B38400
 #define _POSIX_SOURCE 1 // POSIX compliant source
+
+#define FALSE 0
+#define TRUE 1
+
+#define BUF_SIZE 256
+
 struct termios oldtio;
 struct termios newtio;
 int fd = 0;
@@ -30,36 +36,37 @@ void frame(u_int16_t byteOne, u_int16_t byteTwo, u_int16_t byteThree, u_int16_t 
     buffer[4] = byteFive;
 }
 
+int fileTransferProtocol(){
+    
+}
 
 ////////////////////////////////////////////////
 // LLOPEN
 ////////////////////////////////////////////////
 int llopen(LinkLayer connectionParameters)
 {
-    printf("Opening connection %s \n", connectionParameters.serialPort);
+   printf("Opening connection %s \n", connectionParameters.serialPort);
 
-    unsigned char SET = {FLAG, A_TX, C_SET, A_TX ^ C_SET, FLAG};
-
-    fd = open(connectionParameters.serialPort, O_RDWR | O_NOCTTY);
+    fd = open(connectionParameters.serialPort, O_RDWR | O_NOCTTY | O_NONBLOCK);
 
     if (fd < 0)
     {
         perror(connectionParameters.serialPort);
-        return (-1);
+        return -1;
     }
 
-    // Save current port settings
+    // Save current port settingsS
     if (tcgetattr(fd, &oldtio) == -1)
     {
-        printf("Error 1");
+        printf("Error saving port settings\n");
         perror("tcgetattr");
-        return (-1);
+        return -1;
     }
 
     // Clear struct for new port settings
     memset(&newtio, 0, sizeof(newtio));
 
-    newtio.c_cflag = connectionParameters.baudRate | CS8 | CLOCAL | CREAD;
+    newtio.c_cflag = BAUDRATE | CS8 | CLOCAL | CREAD;
     newtio.c_iflag = IGNPAR;
     newtio.c_oflag = 0;
 
@@ -67,38 +74,28 @@ int llopen(LinkLayer connectionParameters)
     newtio.c_lflag = 0;
     newtio.c_cc[VTIME] = 0; // Inter-character timer unused
     newtio.c_cc[VMIN] = 5;  // Blocking read until 5 chars received
-
-
-
-    // VTIME e VMIN should be changed in order to protect with a
-    // timeout the reception of the following character(s)
-
-    // Now clean the line and activate the settings for the port
-    // tcflush() discards data written to the object referred to
-    // by fd but not transmitted, or data received but not read,
-    // depending on the value of queue_selector:
-    //   TCIFLUSH - flushes data received but not read.
     tcflush(fd, TCIOFLUSH);
 
     // Set new port settings
     if (tcsetattr(fd, TCSANOW, &newtio) == -1)
     {
-        printf("Error 2");
+        printf("Error setting port settings\n");
         perror("tcsetattr");
-        return (-1);
+        return -1;
     }
 
     printf("New termios structure set\n");
 
-    if (connectionParameters.role == LlRx)
-    {
-        receiverStart(fd);
-    }
-    else
-    {
-        senderStart(fd);
+    if (connectionParameters.role == LlRx) {
+        if (!receiverStart(fd)) return -1;
+    } else {
+        if (!senderStart(fd)){
+            printf("Error sending data\n");
+         return -1;
+        }
     }
 
+    
     return 1;
 }
 
@@ -133,9 +130,6 @@ int llwrite(const unsigned char *buf, int bufSize)
 ////////////////////////////////////////////////
 int llread(unsigned char *packet)
 {
-    // Read string from serial port
-    int bytes = read(fd, packet, 256);
-    printf("%d bytes read : %s\n", bytes, packet);
     
    
     return 0;

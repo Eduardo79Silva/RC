@@ -9,3 +9,4 @@
 #include <unistd.h>
 
 int stateMachine(char *buffer, int length, u_int16_t ctrl);
+

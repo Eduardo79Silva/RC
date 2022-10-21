@@ -13,11 +13,82 @@ int sendSET(int fd, unsigned char *msg)
     return bytes;
 }
 
-void senderStart(int fd)
+int senderStart(int fd)
 {
     unsigned char buf[BUFSIZE] = {0};
 
     sendSET(fd, &buf);
-    
+
+    return 1;
     
 }
+
+
+// void byteDestuffing(unsigned char *buffer, int length)
+// {
+//     int i = 0;
+//     int j = 0;
+//     int k = 0;
+//     int flag = 0;
+//     unsigned char *temp = (unsigned char *)malloc(length * sizeof(unsigned char));
+
+//     for (i = 0; i < length; i++)
+//     {
+//         if (buffer[i] == 0x7D)
+//         {
+//             if (buffer[i + 1] == 0x5E)
+//             {
+//                 temp[j] = 0x7E;
+//                 i++;
+//                 j++;
+//             }
+//             else if (buffer[i + 1] == 0x5D)
+//             {
+//                 temp[j] = 0x7D;
+//                 i++;
+//                 j++;
+//             }
+//         }
+//         else
+//         {
+//             temp[j] = buffer[i];
+//             j++;
+//         }
+//     }
+
+//     for (k = 0; k < j; k++)
+//     {
+//         buffer[k] = temp[k];
+//     }
+// }
+
+// void byteStuffing(char *buffer, int length, char *buffer2)
+// {
+//     int currentByte = 0;
+//     int currentByte2 = 0;
+
+//     while (currentByte < length)
+//     {
+//         if (buffer[currentByte] == FLAG)
+//         {
+//             buffer2[currentByte2] = ESCAPE;
+//             currentByte2++;
+//             buffer2[currentByte2] = FLAG ^ 0x20;
+//             currentByte2++;
+//         }
+//         else if (buffer[currentByte] == ESCAPE)
+//         {
+//             buffer2[currentByte2] = ESCAPE;
+//             currentByte2++;
+//             buffer2[currentByte2] = ESCAPE ^ 0x20;
+//             currentByte2++;
+//         }
+//         else
+//         {
+//             buffer2[currentByte2] = buffer[currentByte];
+//             currentByte2++;
+//         }
+//         currentByte++;
+//     }
+// }
+
