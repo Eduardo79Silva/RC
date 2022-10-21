@@ -4,14 +4,14 @@
 int localFD;
 
 
-volatile int STOP = 0;
+int STOP = 0;
 
 unsigned char buf[BUFSIZE] = {0};
 
 void sendUA(unsigned char *res){
 
     res[0] = FLAG; // FLAG
-    res[1] = A_RX; // A
+    res[1] = A_TX; // A
     res[2] = C_UA; // C
     res[3] = BCC(A_RX, C_UA); // BCC
     res[4] = FLAG; // FLAG
@@ -33,7 +33,7 @@ void receiverStart(int fd)
         if (buf != 0 && bytes_ > -1) //If there is data to read in the buffer
         {
             printf("Received %02x \n", buf[0]);
-            int ans = stateMachine(buf, BUFSIZE, C_SET); //Check if the received data is a SET flag
+            int ans = stateMachine(buf, LlRx); //Check if the received data is a SET flag
             if (ans == 1)
             {
                 printf("SET received\n");

@@ -7,13 +7,22 @@
 #include <termios.h>
 #include <unistd.h>
 #include "macros.h"
+#include "state_machine.h"
 
 int state = 0; // 0 = Start; 1 = FLAG; 2 = A; 3 = C; 4 = BCC; 5 = STOP
 
 
-int stateMachine(char *buffer, int length, u_int16_t ctrl) // State machine used to check if the received data is a SET or a UA
+int stateMachine(char *buffer, LinkLayerRole role) // State machine used to check if the received data is a SET or a UA
 {
     int currentByte = 0; //Current byte being read, starting at index 0
+    u_int16_t ctrl;
+
+    if(role == LlTx){ //If the role is transmitter
+        ctrl = C_UA; //The control field should be UA
+    }
+    else {
+        ctrl = C_SET; //The control field should be SET
+    }
 
     while (TRUE)
     {
@@ -23,6 +32,7 @@ int stateMachine(char *buffer, int length, u_int16_t ctrl) // State machine used
             printf("State 0\n");
             if (buffer[currentByte] == FLAG) // Check if the received byte is a FLAG
             {
+                printf("FLAG received\n");
                 state = 1; // If it is, go to the next state else stay in the same state
             }
             currentByte++; // Read the next byte

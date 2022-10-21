@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <termios.h>
 #include <unistd.h>
+#include "link_layer.h"
 
-int stateMachine(char *buffer, int length, u_int16_t ctrl);
+int stateMachine(char *buffer, LinkLayerRole role);
 

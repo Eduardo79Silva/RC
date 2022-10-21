@@ -1,8 +1,11 @@
 #include "macros.h"
 #include "alarm.h"
+#include "state_machine.h"
 
 int localFD;
 int nRetransmissions;
+int STOPS = 0;
+
 
 
 
@@ -45,16 +48,22 @@ int receiveUA()
 {
     unsigned char buf[BUFSIZE] = {0};
 
-    int bytes = read(localFD, buf, 5);
-    if (buf != 0 && bytes > -1)
-    {
-        printf("Received %02x \n", buf[0]);
-        int ans = stateMachine(buf, BUFSIZE, C_UA); // Check if the received data is a UA response
-            printf("\nUA received\n");
-            disableAlarm(); // If it is, disable the alarm
-        if (ans == 1)
+        int bytes = read(localFD, buf, 5);
+        printf("Received %d \n", localFD);
+    while(STOPS == FALSE){
+        //printf("Entered while\n");
+        if (buf != 0 && bytes > -1)
         {
-            return 1;
+            printf("Received %02x \n", buf[0]);
+            int ans = stateMachine(buf, LlTx); // Check if the received data is a UA response
+            printf("Answer: %d\n", ans);
+            if (ans == 1)
+            {
+                printf("\nUA received\n");
+                disableAlarm(); // If it is, disable the alarm
+                STOPS = TRUE;
+                return 1;
+            }
         }
     }
     return 0;
