@@ -10,6 +10,8 @@
 #include <unistd.h>
 #include "link_layer.h"
 #include "macros.h"
+#include "receiver.h"
+#include "sender.h"
 
 #define BAUDRATE B38400
 #define _POSIX_SOURCE 1 // POSIX compliant source

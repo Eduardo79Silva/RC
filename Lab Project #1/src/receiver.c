@@ -18,7 +18,7 @@ void sendUA(unsigned char *res){
 
     int bytes = write(localFD, res, 5);
     printf("UA response sent, %d bytes written\n", bytes);
-    return bytes;
+    return;
 }
 
 

@@ -5,7 +5,7 @@
 extern int alarmEnabled;
 extern int alarmCount;
 
-void killAlarm();
+void disableAlarm();
 
 void alarmHandler(int signal);
 
