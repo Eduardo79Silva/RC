@@ -50,6 +50,11 @@ STATE stateMachine(char *buffer, LinkLayerRole role) // State machine used to ch
             return START;
         case A_RCV: // A state
             printf("State 2\n");
+            printf("current: %d\n", buffer[0]);
+            printf("C: %d\n", buffer[1]);
+            printf("A: %d\n", buffer[2]);
+            printf("A: %d\n", buffer[3]);           
+            printf("A: %d\n", buffer[4]);
             if (buffer[currentByte] == ctrl) // Check if the received byte is the control byte
                 state = C_RCV;
             else if (buffer[currentByte] == FLAG) // If it isn't, but if it is a FLAG go back to the FLAG state

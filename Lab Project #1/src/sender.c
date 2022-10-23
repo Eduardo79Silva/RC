@@ -59,7 +59,7 @@ int senderStart(int fd, int reCount)
             nRetransmissions--; //Decrement the number of retransmissions
         }
 
-        if(receiveUA()) return 1; // If UA flag has been received, return 1 to indicate success and exit the function
+        if(receiveUA(fd)) return 1; // If UA flag has been received, return 1 to indicate success and exit the function
     }
     
 
