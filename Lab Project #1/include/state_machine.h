@@ -9,5 +9,5 @@
 #include <unistd.h>
 #include "link_layer.h"
 
-int stateMachine(char *buffer, LinkLayerRole role);
+STATE stateMachine(char *buffer, LinkLayerRole role);
 

@@ -47,7 +47,7 @@ int llopen(LinkLayer connectionParameters)
 
     // Open serial port device for reading and writing (Given by the professor)
 
-   printf("Opening connection %s \n", connectionParameters.serialPort);
+    printf("Opening connection %s \n", connectionParameters.serialPort);
 
     fd = open(connectionParameters.serialPort, O_RDWR | O_NOCTTY | O_NONBLOCK);
 
@@ -91,11 +91,14 @@ int llopen(LinkLayer connectionParameters)
     // Start either transmitter or receiver
 
     if (connectionParameters.role == LlRx) {
-        if (!receiverStart(fd)) return -1;
+        if (!receiverStart(fd,connectionParameters.nRetransmissions)){
+            printf("ERROR RECEIVING DATA");
+            return -1;
+        } 
     } else {
         if (!senderStart(fd, connectionParameters.nRetransmissions)){
             printf("Error sending data\n");
-         return -1;
+            return -1;
         }
     }
 

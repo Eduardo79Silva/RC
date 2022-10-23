@@ -7,7 +7,30 @@ int nRetransmissions;
 int STOPS = 0;
 
 
+int receiveUA()
+{
+    unsigned char buf[BUFSIZE] = {0};
 
+        int bytes = read(localFD, buf, 5);
+        printf("Received %d \n", localFD);
+    while(STOPS == FALSE){
+        //printf("Entered while\n");
+        if (buf != 0 && bytes > -1)
+        {
+            printf("Received %02x \n", buf[0]);
+            int ans = stateMachine(buf, LlTx); // Check if the received data is a UA response
+            printf("Answer: %d\n", ans);
+            if (ans == 1)
+            {
+                printf("\nUA received\n");
+                disableAlarm(); // If it is, disable the alarm
+                STOPS = TRUE;
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
 
 int sendSET(unsigned char *buf)
 {
@@ -44,30 +67,7 @@ int senderStart(int fd, int reCount)
     
 }
 
-int receiveUA()
-{
-    unsigned char buf[BUFSIZE] = {0};
 
-        int bytes = read(localFD, buf, 5);
-        printf("Received %d \n", localFD);
-    while(STOPS == FALSE){
-        //printf("Entered while\n");
-        if (buf != 0 && bytes > -1)
-        {
-            printf("Received %02x \n", buf[0]);
-            int ans = stateMachine(buf, LlTx); // Check if the received data is a UA response
-            printf("Answer: %d\n", ans);
-            if (ans == 1)
-            {
-                printf("\nUA received\n");
-                disableAlarm(); // If it is, disable the alarm
-                STOPS = TRUE;
-                return 1;
-            }
-        }
-    }
-    return 0;
-}
 
 
 

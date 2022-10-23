@@ -15,3 +15,14 @@
 #define TRUE 1
 
 #define BUFSIZE 256
+
+typedef enum
+{
+    START,
+    FLAG_RCV,
+    A_RCV,
+    C_RCV,
+    BCC_OK,
+    STOP_ST,
+    INVALID
+} STATE;

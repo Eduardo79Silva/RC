@@ -1,10 +1,12 @@
 #include "macros.h"
 #include "state_machine.h"
+#include "alarm.h"
+#include "link_layer.h"
 
 int localFD;
 
-
 int STOP = 0;
+
 
 unsigned char buf[BUFSIZE] = {0};
 
@@ -22,19 +24,21 @@ void sendUA(unsigned char *res){
 }
 
 
-void receiverStart(int fd)
+void receiverStart(int fd, int nRetransmissions)
 {
     //Save file descriptor
     localFD = fd;
 
-    while (STOP == FALSE)
-    {
+    while (!STOP && alarmCount < nRetransmissions){
+        
         int bytes_ = read(localFD, buf, 1);
         if (buf != 0 && bytes_ > -1) //If there is data to read in the buffer
         {
             printf("Received %02x \n", buf[0]);
-            int ans = stateMachine(buf, LlRx); //Check if the received data is a SET flag
-            if (ans == 1)
+
+            
+            STATE ans = stateMachine(buf, LlRx); //Check if the received data is a SET flag
+            if (ans == FLAG_RCV)
             {
                 printf("SET received\n");
                 sendUA(&buf); //Send UA response to the transmitter

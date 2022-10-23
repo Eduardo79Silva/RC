@@ -9,10 +9,12 @@
 #include "macros.h"
 #include "state_machine.h"
 
-int state = 0; // 0 = Start; 1 = FLAG; 2 = A; 3 = C; 4 = BCC; 5 = STOP
 
 
-int stateMachine(char *buffer, LinkLayerRole role) // State machine used to check if the received data is a SET or a UA
+
+STATE state = START; // 0 = Start; 1 = FLAG; 2 = A; 3 = C; 4 = BCC; 5 = STOP
+
+STATE stateMachine(char *buffer, LinkLayerRole role) // State machine used to check if the received data is a SET or a UA
 {
     int currentByte = 0; //Current byte being read, starting at index 0
     u_int16_t ctrl;
@@ -24,66 +26,65 @@ int stateMachine(char *buffer, LinkLayerRole role) // State machine used to chec
         ctrl = C_SET; //The control field should be SET
     }
 
-    while (TRUE)
-    {
+    while (TRUE){
         switch (state)
         {
-        case 0: // Start state
+        case START: // Start state
             printf("State 0\n");
             if (buffer[currentByte] == FLAG) // Check if the received byte is a FLAG
             {
                 printf("FLAG received\n");
-                state = 1; // If it is, go to the next state else stay in the same state
+                state = FLAG_RCV; // If it is, go to the next state else stay in the same state
             }
             currentByte++; // Read the next byte
-            return 0;
-        case 1: // FLAG state
+            return START;
+        case FLAG_RCV: // FLAG state
 
             printf("State 1\n");
             if (buffer[currentByte] == A_TX) // Check if the received byte is A_TX
-                state = 2;
+                state = A_RCV;
             else if (buffer[currentByte] != FLAG) // If it isn't, go back to the start state
-                state = 0;
+                state = FLAG_RCV;
 
             currentByte++;
-            return 0;
-        case 2: // A state
+            return START;
+        case A_RCV: // A state
             printf("State 2\n");
             if (buffer[currentByte] == ctrl) // Check if the received byte is the control byte
-                state = 3;
+                state = C_RCV;
             else if (buffer[currentByte] == FLAG) // If it isn't, but if it is a FLAG go back to the FLAG state
-                state = 1;
+                state = FLAG_RCV;
             else
-                state = 0; // If it isn't, go back to the start state
+                state = START; // If it isn't, go back to the start state
 
             currentByte++;
-            return 0;
+            return START;
 
-        case 3: // C state
+        case C_RCV: // C state
             printf("State 3\n");
             if (buffer[currentByte] == buffer[currentByte - 1] ^ buffer[currentByte - 2]) // Check if the received byte is the BCC
-                state = 4;
+                state = BCC_OK;
             else if (buffer[currentByte] == FLAG)
-                state = 1;
+                state = FLAG_RCV;
             else
-                state = 0;
+                state = START;
 
             currentByte++;
-            return 0;
+            return START;
 
-        case 4: // BCC state
+        case BCC_OK: // BCC state
             printf("State 4\n");
             if (buffer[currentByte] == FLAG){ // Check if the received byte is a STOP FLAG
                 printf("State machine finished\n");
-                return TRUE;
+                return FLAG_RCV;
             }
             else
-                state = 0;
+                state = START;
 
             currentByte++;
 
         default:
-            return -1; // If the state machine is in an invalid state, return -1
+            return INVALID; // If the state machine is in an invalid state, return -1
         }
     }
 }
