@@ -17,16 +17,16 @@ void stateMachine(char *buffer, int* state, unsigned int C) // State machine use
 
     switch (*state){
         case START: // Start state
-            printf("State 0\n");
+            //printf("State 0\n");
             if (*buffer == FLAG){ // Check if the received byte is a FLAG
-                printf("FLAG received\n");
+    //printf("FLAG received\n");
                 *state = FLAG_RCV; // If it is, go to the next state else stay in the same state
             }
             break;
 
         case FLAG_RCV: // FLAG state
 
-            printf("State 1\n");
+           // printf("State 1\n");
             if (*buffer == A_TX) // Check if the received byte is A_TX
                 *state = A_RCV;
             else if (*buffer != FLAG) // If it isn't, go back to the start state
@@ -52,7 +52,7 @@ void stateMachine(char *buffer, int* state, unsigned int C) // State machine use
 
 
         case C_RCV: // C state
-            printf("State 3\n");
+            //printf("State 3\n");
             if (*buffer ==  BCC(A_TX,C)) // Check if the received byte is the BCC
                 *state = BCC_OK;
             else if (*buffer == FLAG)
@@ -64,7 +64,7 @@ void stateMachine(char *buffer, int* state, unsigned int C) // State machine use
 
 
         case BCC_OK: // BCC state
-            printf("State 4\n");
+            //printf("State 4\n");
             if (*buffer == FLAG){ // Check if the received byte is a STOP FLAG
                 printf("State machine finished\n");
                 *state = STOP_ST;

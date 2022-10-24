@@ -5,6 +5,8 @@
 #include "macros.h"
 #include "string.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
 
 
 void applicationLayer(const char *serialPort, const char *role, int baudRate,
@@ -38,12 +40,15 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
         return;
     }
 
+
     if(link.role == LlTx){
 
         //CREATING THE START CONTROL PACKET 
+        FILE *file = fopen(filename, "r"); 
         
         unsigned char startCtrlPacket[MAX_PAYLOAD_SIZE];
-        int fileSize = ftell(filename);
+        printf("\nConnection established!\n");
+        int fileSize = ftell(file);
         int l = 0;
 
         while(fileSize > 1){
@@ -53,7 +58,7 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
 
         char size[l];
 
-        itoa(fileSize,size,l);
+        sprintf(size, "%d", fileSize);
 
         startCtrlPacket[0] = 2; // Control camp - start
         startCtrlPacket[1] = 0; // File Size

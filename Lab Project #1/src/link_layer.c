@@ -116,15 +116,17 @@ int llopen(LinkLayer connectionParameters)
                     return -1;
                 }
                 startAlarm(connectionParameters.timeout);
-                alarmEnabled = TRUE;
             }
 
-            read(fd,&c,1);
-            stateMachine(&c, &state, C_UA);
+            int bytes = read(fd,&c,1);
+
+            if(bytes > -1){
+                printf("RECEIVED: %x\n", c);
+                stateMachine(&c, &state, C_UA);
+            }
 
             if(state == STOP_ST){
                 printf("UA RECEIVED\n");
-                alarmEnabled = FALSE;
                 disableAlarm();
                 break;
             }
@@ -146,8 +148,11 @@ int llopen(LinkLayer connectionParameters)
         //NÃO PRECISA DE UM ALARM COUNT POIS SE O TRANSMITER NÃO RECEBER O UA ELE DISPARA O ALARME
 
         while(state != STOP_ST){
-            read(fd,&c,1);
-            stateMachine(&c,&state,C_SET);
+            int bytes = read(fd,&c,1);
+            if(bytes > -1){
+                printf("RECEIVED: %x\n", c);
+                stateMachine(&c,&state,C_SET);
+            }
         }
 
         int bytes = write(fd,buf,5);
@@ -185,14 +190,22 @@ int llwrite(const unsigned char *buf, int bufSize)
 
     return 0; */
 
-    unsigned char *frame = (unsigned char *) malloc((bufSize + 6)* sizeof(unsigned char)); //
-    unsigned char BCC1 = BCC(frame[1],frame[2]);
+    unsigned char *frame = (unsigned char *) malloc((bufSize + 6)* sizeof(unsigned char));
     unsigned char BCC2 = BCC2creator(buf,bufSize);
 
     frame[0] = FLAG;
     frame[1] = A_TX;
     frame[2] = NS;
-    frame[3] = BCC1;
+    frame[3] = BCC(frame[1],frame[2]);
+
+    for(int i =1 ; i <= bufSize; i++){
+        frame[3+i] = buf[i];
+    }
+
+    frame[4+bufSize] = BCC2;
+    frame[5+bufSize] = FLAG;
+
+    byteStuffing(&frame, bufSize+6);
 
 
 

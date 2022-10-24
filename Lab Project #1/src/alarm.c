@@ -17,14 +17,11 @@ void alarmHandler(int signal){ // Alarm function handler, fires when the alarm i
 
 void disableAlarm() { // Called when UA response is received
     alarmEnabled = FALSE;
-    alarmCount = 0;
-    printf("Alarm disabled");
+    printf("Alarm disabled\n");
 }
 
 
 int startAlarm(unsigned int time) { // Start alarm function
-   
-    printf("Alarm started\n");
 
     // Set alarm function handler
     (void)signal(SIGALRM, alarmHandler); 

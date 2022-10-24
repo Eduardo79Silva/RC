@@ -109,33 +109,35 @@ int senderStart(int fd, int reCount)
 //     }
 // }
 
-// void byteStuffing(char *buffer, int length, char *buffer2)
-// {
-//     int currentByte = 0;
-//     int currentByte2 = 0;
+void byteStuffing(char *buffer, int length)
+{
+    int currentByte = 0;
+    int currentByte2 = 0;
 
-//     while (currentByte < length)
-//     {
-//         if (buffer[currentByte] == FLAG)
-//         {
-//             buffer2[currentByte2] = ESCAPE;
-//             currentByte2++;
-//             buffer2[currentByte2] = FLAG ^ 0x20;
-//             currentByte2++;
-//         }
-//         else if (buffer[currentByte] == ESCAPE)
-//         {
-//             buffer2[currentByte2] = ESCAPE;
-//             currentByte2++;
-//             buffer2[currentByte2] = ESCAPE ^ 0x20;
-//             currentByte2++;
-//         }
-//         else
-//         {
-//             buffer2[currentByte2] = buffer[currentByte];
-//             currentByte2++;
-//         }
-//         currentByte++;
-//     }
-// }
+    unsigned char buffer2[MAX_PAYLOAD_SIZE*2+2] = {0};
+
+    while (currentByte < length)
+    {
+        if (buffer[currentByte] == FLAG)
+        {
+            buffer2[currentByte2] = ESCAPE;
+            currentByte2++;
+            buffer2[currentByte2] = FLAG ^ 0x20;
+            currentByte2++;
+        }
+        else if (buffer[currentByte] == ESCAPE)
+        {
+            buffer2[currentByte2] = ESCAPE;
+            currentByte2++;
+            buffer2[currentByte2] = ESCAPE ^ 0x20;
+            currentByte2++;
+        }
+        else
+        {
+            buffer2[currentByte2] = buffer[currentByte];
+            currentByte2++;
+        }
+        currentByte++;
+    }
+}
 
