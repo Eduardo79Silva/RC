@@ -12,7 +12,7 @@ unsigned char buf[BUFSIZE] = {0};
 
 void sendUA(unsigned char *res){
 
-    res[0] = FLAG; // FLAG
+/*     res[0] = FLAG; // FLAG
     res[1] = A_TX; // A
     res[2] = C_UA; // C
     res[3] = BCC(res[1], res[2]); // BCC
@@ -20,13 +20,13 @@ void sendUA(unsigned char *res){
 
     int bytes = write(localFD, res, 5);
     printf("UA response sent, %d bytes written\n", bytes);
-    return;
+    return; */
 }
 
 
 void receiverStart(int fd, int nRetransmissions)
 {
-    //Save file descriptor
+/*     //Save file descriptor
     localFD = fd;
 
     while (!STOP && alarmCount < nRetransmissions){
@@ -45,6 +45,6 @@ void receiverStart(int fd, int nRetransmissions)
                 STOP = TRUE;
             }
         }
-    }
+    } */
 }
 

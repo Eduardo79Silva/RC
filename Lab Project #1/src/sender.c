@@ -9,10 +9,10 @@ int STOPS = 0;
 
 int receiveUA()
 {
-    unsigned char buf[BUFSIZE] = {0};
+/*     unsigned char buf[BUFSIZE] = {0};
 
-        int bytes = read(localFD, buf, 5);
-        printf("Received %d \n", localFD);
+    int bytes = read(localFD, buf, 5);
+    printf("Received %d \n", localFD);
     while(STOPS == FALSE){
         //printf("Entered while\n");
         if (buf != 0 && bytes > -1)
@@ -29,12 +29,12 @@ int receiveUA()
             }
         }
     }
-    return 0;
+    return 0; */
 }
 
 int sendSET(unsigned char *buf)
 {
-    buf[0] = FLAG; // FLAG
+/*     buf[0] = FLAG; // FLAG
     buf[1] = A_TX; // A
     buf[2] = C_SET; // C
     buf[3] = BCC(buf[1], buf[2]); // BCC
@@ -42,12 +42,12 @@ int sendSET(unsigned char *buf)
 
     int bytes = write(localFD, buf, 5);
     printf("SET flag sent, %d bytes written\n", bytes);
-    return bytes;
+    return bytes; */
 }
 
 int senderStart(int fd, int reCount) 
 {
-    localFD = fd;
+/*     localFD = fd;
     nRetransmissions = reCount; // Number of retransmissions
     unsigned char buf[BUFSIZE] = {0}; // Buffer to store the received data
 
@@ -63,7 +63,7 @@ int senderStart(int fd, int reCount)
     }
     
 
-    return 0;
+    return 0; */
     
 }
 

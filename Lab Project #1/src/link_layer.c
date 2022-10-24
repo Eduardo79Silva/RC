@@ -12,6 +12,7 @@
 #include "macros.h"
 #include "receiver.h"
 #include "sender.h"
+#include "utils.h"
 
 #define BAUDRATE B38400
 #define _POSIX_SOURCE 1 // POSIX compliant source
@@ -24,6 +25,11 @@
 struct termios oldtio;
 struct termios newtio;
 int fd = 0;
+
+int NS = 0;
+int NR = 1;
+
+extern int alarmEnabled;
 
 ////////////////////////////////////////////////
 // FRAME BUILDER
@@ -90,16 +96,64 @@ int llopen(LinkLayer connectionParameters)
 
     // Start either transmitter or receiver
 
-    if (connectionParameters.role == LlRx) {
-        if (!receiverStart(fd,connectionParameters.nRetransmissions)){
-            printf("ERROR RECEIVING DATA");
-            return -1;
-        } 
-    } else {
-        if (!senderStart(fd, connectionParameters.nRetransmissions)){
-            printf("Error sending data\n");
-            return -1;
+    if (connectionParameters.role == LlTx) {
+        
+        unsigned char buf[5] = {0};
+        unsigned char c;
+        STATE state = START;
+
+        buf[0] = FLAG; // FLAG
+        buf[1] = A_TX; // A
+        buf[2] = C_SET; // C
+        buf[3] = BCC(buf[1], buf[2]); // BCC
+        buf[4] = FLAG; // FLAG
+
+        while(alarmCount < connectionParameters.nRetransmissions){
+            if(!alarmEnabled){
+                state = START;
+                if (write(fd,buf, 5) == -1){
+                    printf("ERROR: Failed to write\n");
+                    return -1;
+                }
+                startAlarm(connectionParameters.timeout);
+                alarmEnabled = TRUE;
+            }
+
+            read(fd,&c,1);
+            stateMachine(&c, &state, C_UA);
+
+            if(state == STOP_ST){
+                printf("UA RECEIVED\n");
+                alarmEnabled = FALSE;
+                disableAlarm();
+                break;
+            }
+
         }
+
+    } else if(connectionParameters.role == LlRx) {
+
+        unsigned char buf[5] = {0};
+        unsigned char c;
+        STATE state = START;
+
+        buf[0] = FLAG; // FLAG
+        buf[1] = A_TX; // A
+        buf[2] = C_UA; // C
+        buf[3] = BCC(buf[1], buf[2]); // BCC
+        buf[4] = FLAG; // FLAG
+
+        //NÃO PRECISA DE UM ALARM COUNT POIS SE O TRANSMITER NÃO RECEBER O UA ELE DISPARA O ALARME
+
+        while(state != STOP_ST){
+            read(fd,&c,1);
+            stateMachine(&c,&state,C_SET);
+        }
+
+        int bytes = write(fd,buf,5);
+        printf("UA response sent, %d bytes written\n", bytes);
+
+
     }
 
     
@@ -112,7 +166,7 @@ int llopen(LinkLayer connectionParameters)
 
 int llwrite(const unsigned char *buf, int bufSize)
 {
-    // Create string to send
+/*     // Create string to send
 
     printf("Enter a string : \n");
     gets(buf);
@@ -129,7 +183,21 @@ int llwrite(const unsigned char *buf, int bufSize)
     // Wait until all bytes have been written to the serial port
     sleep(1);
 
-    return 0;
+    return 0; */
+
+    unsigned char *frame = (unsigned char *) malloc((bufSize + 6)* sizeof(unsigned char)); //
+    unsigned char BCC1 = BCC(frame[1],frame[2]);
+    unsigned char BCC2 = BCC2creator(buf,bufSize);
+
+    frame[0] = FLAG;
+    frame[1] = A_TX;
+    frame[2] = NS;
+    frame[3] = BCC1;
+
+
+
+
+
 }
 
 
