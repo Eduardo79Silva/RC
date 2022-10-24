@@ -139,5 +139,10 @@ void byteStuffing(char *buffer, int length)
         }
         currentByte++;
     }
+
+    for (int i = 0; i < currentByte2; i++)
+    {
+        buffer[i] = buffer2[i];
+    }
 }
 
