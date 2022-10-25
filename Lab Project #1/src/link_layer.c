@@ -179,30 +179,43 @@ int llwrite(const unsigned char *buf, int bufSize){
 
     unsigned char *frame = (unsigned char *) malloc((MAX_PAYLOAD_SIZE + 6)* sizeof(unsigned char));
     unsigned char BCC2 = BCC2creator(buf,bufSize);
+    printf("Printing buffer\n");
+    for(int i = 0; i < bufSize+6; i++){
+        printf("%x \n", buf[i]);
+    }
 
     frame[0] = FLAG;
     frame[1] = A_TX;
     frame[2] = NS;
     frame[3] = BCC(frame[1],frame[2]);
+   
 
 
     //Estamos a criar um novo array que vai conter a informação toda do buf+bcc2 para fazermos bytestuffing de tudo
     unsigned char *newBuffer = (unsigned char *) malloc((bufSize+1) * sizeof(unsigned char));
-    int newSize = bufSize+1;
+    int newSize = bufSize;
 
-    for(int i = 0; i<bufSize; i++){
+    
+
+    for(int i = 0; i<=bufSize; i++){
         newBuffer[i] = buf[i];
     }
     newBuffer[bufSize] = BCC2;
+    printf("%x \n", BCC2);
 
-    byteStuffing(&newBuffer, &newSize);
+    
+    byteStuffing(newBuffer, &newSize);
 
-    for(int i =1 ; i <= newSize; i++){
-        frame[3+i] = newBuffer[i];
+    for(int i =0 ; i <= newSize; i++){
+        frame[4+i] = newBuffer[i];
     }
+    
+    frame[newSize+4] = FLAG;
 
-    //frame[4+bufSize] = BCC2;
-    frame[5+newSize] = FLAG;
+    printf("Printing frame\n");
+    for(int i = 0; i < bufSize+6; i++){
+        printf("%x \n", frame[i]);
+    }
 
     int rejected = FALSE;
     int rejectedFlag = 0;

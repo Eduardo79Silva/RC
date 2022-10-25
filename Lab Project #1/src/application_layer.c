@@ -72,7 +72,7 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
             startCtrlPacket[5+l+i] = filename[i]; //Storing file name 
         }
 
-        int bufSize = 5+l+strlen(filename);
+        int bufSize = 6+l+strlen(filename);
 
         llwrite(startCtrlPacket, bufSize);
 

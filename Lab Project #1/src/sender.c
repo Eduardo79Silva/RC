@@ -111,8 +111,9 @@ void byteStuffing(unsigned char *buffer, int *length){
 
     unsigned char buffer2[MAX_PAYLOAD_SIZE*2+2] = {0};
 
-    while (currentByte < length)
+    while (currentByte < *length)
     {
+        
         if (buffer[currentByte] == FLAG){
 
             buffer2[currentByte2] = ESC;
@@ -134,8 +135,9 @@ void byteStuffing(unsigned char *buffer, int *length){
         currentByte++;
     }
 
-    buffer = (unsigned char *) realloc(buffer,currentByte2+1);
+    buffer = (unsigned char *) realloc(buffer,(currentByte2+1)*sizeof(unsigned char));
 
+    printf("%d == %d\n" , currentByte2+1, *length);
     for (int i = 0; i < currentByte2; i++)
     {
         buffer[i] = buffer2[i];
