@@ -26,6 +26,9 @@ struct termios oldtio;
 struct termios newtio;
 int fd = 0;
 
+int nRetransmissions = 0;
+int timeout = 0;
+
 int NS = 0;
 int NR = 1;
 
@@ -50,6 +53,9 @@ void frame(u_int16_t byteOne, u_int16_t byteTwo, u_int16_t byteThree, u_int16_t 
 
 int llopen(LinkLayer connectionParameters)
 {
+
+    nRetransmissions = connectionParameters.nRetransmissions;
+    timeout = connectionParameters.timeout;
 
     // Open serial port device for reading and writing (Given by the professor)
 
@@ -169,28 +175,9 @@ int llopen(LinkLayer connectionParameters)
 // LLWRITE
 ////////////////////////////////////////////////
 
-int llwrite(const unsigned char *buf, int bufSize)
-{
-/*     // Create string to send
+int llwrite(const unsigned char *buf, int bufSize){
 
-    printf("Enter a string : \n");
-    gets(buf);
-
-    printf("\nYou entered: %s\n", buf);
-
-    // In non-canonical mode, '\n' does not end the writing.
-    // Test this condition by placing a '\n' in the middle of the buffer.
-    // The whole buffer must be sent even with the '\n'.
-
-    int bytes = write(fd, buf, 256);
-    printf("%d bytes written\n", strlen(buf));
-
-    // Wait until all bytes have been written to the serial port
-    sleep(1);
-
-    return 0; */
-
-    unsigned char *frame = (unsigned char *) malloc((bufSize + 6)* sizeof(unsigned char));
+    unsigned char *frame = (unsigned char *) malloc((MAX_PAYLOAD_SIZE + 6)* sizeof(unsigned char));
     unsigned char BCC2 = BCC2creator(buf,bufSize);
 
     frame[0] = FLAG;
@@ -198,16 +185,78 @@ int llwrite(const unsigned char *buf, int bufSize)
     frame[2] = NS;
     frame[3] = BCC(frame[1],frame[2]);
 
-    for(int i =1 ; i <= bufSize; i++){
-        frame[3+i] = buf[i];
+
+    //Estamos a criar um novo array que vai conter a informação toda do buf+bcc2 para fazermos bytestuffing de tudo
+    unsigned char *newBuffer = (unsigned char *) malloc((bufSize+1) * sizeof(unsigned char));
+    int newSize = bufSize+1;
+
+    for(int i = 0; i<bufSize; i++){
+        newBuffer[i] = buf[i];
+    }
+    newBuffer[bufSize] = BCC2;
+
+    byteStuffing(&newBuffer, &newSize);
+
+    for(int i =1 ; i <= newSize; i++){
+        frame[3+i] = newBuffer[i];
     }
 
-    frame[4+bufSize] = BCC2;
-    frame[5+bufSize] = FLAG;
+    //frame[4+bufSize] = BCC2;
+    frame[5+newSize] = FLAG;
 
-    byteStuffing(&frame, bufSize+6);
+    int rejected = FALSE;
+    unsigned char c;
+    STATE state = START;
+    unsigned int ctrl_camp = NULL;
+
+    while(alarmCount < nRetransmissions){
+        if(!alarmEnabled){
+            if (write(fd,buf, 5+newSize) == -1){
+                printf("ERROR: Failed to write\n");
+                return -1;
+            }
+            startAlarm(timeout);
+        }
+        if(rejected == TRUE){
+            if (write(fd,buf, 5+newSize) == -1){
+                printf("ERROR: Failed to write\n");
+                return -1;
+            }
+            rejected = FALSE;
+        }
+
+        int bytes = read(fd,&c,1);
+
+        if(bytes > -1){
+            printf("RECEIVED: %x\n", c);
+            if(c == C_RR0 || c == C_RR1 || c == DISC || c == C_REJ0 || c == C_REJ1){
+                if(readCtrlMessage(&c, &state, ctrl_camp) == -1){
+                    ctrl_camp = c;
+                    rejected = TRUE;
+                }
+            }else{
+                if(readCtrlMessage(&c, &state, ctrl_camp) == -1){
+                    rejected = TRUE;
+                }
+            }
+        }
+
+        if(state == STOP_ST){
+            printf("RECEIVED READY\n");
+            if(c == C_RR0 && NS == 0x40){
+                NS = 0X00;
+            }
+            else if(c == C_RR1 && NS == 0x00){
+                NS = 0x40;
+            }
+            disableAlarm();
+            break;
+        }
 
 
+    }
+
+    return (newSize+5);
 
 
 

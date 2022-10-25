@@ -7,9 +7,9 @@ int nRetransmissions;
 int STOPS = 0;
 
 
-int receiveUA()
+/* int receiveUA()
 {
-/*     unsigned char buf[BUFSIZE] = {0};
+    unsigned char buf[BUFSIZE] = {0};
 
     int bytes = read(localFD, buf, 5);
     printf("Received %d \n", localFD);
@@ -29,12 +29,12 @@ int receiveUA()
             }
         }
     }
-    return 0; */
+    return 0;
 }
 
 int sendSET(unsigned char *buf)
 {
-/*     buf[0] = FLAG; // FLAG
+    buf[0] = FLAG; // FLAG
     buf[1] = A_TX; // A
     buf[2] = C_SET; // C
     buf[3] = BCC(buf[1], buf[2]); // BCC
@@ -42,12 +42,12 @@ int sendSET(unsigned char *buf)
 
     int bytes = write(localFD, buf, 5);
     printf("SET flag sent, %d bytes written\n", bytes);
-    return bytes; */
+    return bytes;
 }
 
 int senderStart(int fd, int reCount) 
 {
-/*     localFD = fd;
+    localFD = fd;
     nRetransmissions = reCount; // Number of retransmissions
     unsigned char buf[BUFSIZE] = {0}; // Buffer to store the received data
 
@@ -63,54 +63,49 @@ int senderStart(int fd, int reCount)
     }
     
 
-    return 0; */
+    return 0;
     
+} */
+
+
+
+
+
+void byteDestuffing(unsigned char *buffer, int length){
+    int i = 0;
+    int k = 0;
+
+    unsigned char *temp = (unsigned char *)malloc(length * sizeof(unsigned char));
+
+    for (i = 0; i < length; i++){
+
+        if (buffer[i] == ESC){
+
+            if (buffer[i + 1] == FLAG ^ 0x20){
+
+                temp[i] = FLAG;
+                i++;
+            }
+            else if (buffer[i + 1] == ESC ^ 0x20){
+
+                temp[i] = ESC;
+                i++;
+            }
+        }
+        else{
+            temp[i] = buffer[i];
+            //i++;
+        }
+    }
+
+    buffer =(unsigned char *) realloc(buffer, i+1);
+
+    for (k = 0; k < i; k++){
+        buffer[k] = temp[k];
+    }
 }
 
-
-
-
-
-// void byteDestuffing(unsigned char *buffer, int length)
-// {
-//     int i = 0;
-//     int j = 0;
-//     int k = 0;
-//     int flag = 0;
-//     unsigned char *temp = (unsigned char *)malloc(length * sizeof(unsigned char));
-
-//     for (i = 0; i < length; i++)
-//     {
-//         if (buffer[i] == 0x7D)
-//         {
-//             if (buffer[i + 1] == 0x5E)
-//             {
-//                 temp[j] = 0x7E;
-//                 i++;
-//                 j++;
-//             }
-//             else if (buffer[i + 1] == 0x5D)
-//             {
-//                 temp[j] = 0x7D;
-//                 i++;
-//                 j++;
-//             }
-//         }
-//         else
-//         {
-//             temp[j] = buffer[i];
-//             j++;
-//         }
-//     }
-
-//     for (k = 0; k < j; k++)
-//     {
-//         buffer[k] = temp[k];
-//     }
-// }
-
-void byteStuffing(char *buffer, int length)
-{
+void byteStuffing(unsigned char *buffer, int *length){
     int currentByte = 0;
     int currentByte2 = 0;
 
@@ -118,31 +113,33 @@ void byteStuffing(char *buffer, int length)
 
     while (currentByte < length)
     {
-        if (buffer[currentByte] == FLAG)
-        {
-            buffer2[currentByte2] = ESCAPE;
+        if (buffer[currentByte] == FLAG){
+
+            buffer2[currentByte2] = ESC;
             currentByte2++;
             buffer2[currentByte2] = FLAG ^ 0x20;
             currentByte2++;
         }
-        else if (buffer[currentByte] == ESCAPE)
-        {
-            buffer2[currentByte2] = ESCAPE;
+        else if (buffer[currentByte] == ESC){
+
+            buffer2[currentByte2] = ESC;
             currentByte2++;
-            buffer2[currentByte2] = ESCAPE ^ 0x20;
+            buffer2[currentByte2] = ESC ^ 0x20;
             currentByte2++;
         }
-        else
-        {
+        else{
             buffer2[currentByte2] = buffer[currentByte];
             currentByte2++;
         }
         currentByte++;
     }
 
+    buffer = (unsigned char *) realloc(buffer,currentByte2+1);
+
     for (int i = 0; i < currentByte2; i++)
     {
         buffer[i] = buffer2[i];
     }
-}
 
+    *length = currentByte2+1;
+}

@@ -12,7 +12,7 @@
 
 
 
-void stateMachine(char *buffer, int* state, unsigned int C) // State machine used to check if the received data is a SET or a UA
+void stateMachine(unsigned char *buffer, STATE* state, unsigned int C) // State machine used to check if the received data is a SET or a UA
 {
 
     switch (*state){
@@ -30,7 +30,7 @@ void stateMachine(char *buffer, int* state, unsigned int C) // State machine use
             if (*buffer == A_TX) // Check if the received byte is A_TX
                 *state = A_RCV;
             else if (*buffer != FLAG) // If it isn't, go back to the start state
-                *state = FLAG_RCV;
+                *state = START;
 
             break;
 

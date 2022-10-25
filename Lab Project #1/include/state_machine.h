@@ -9,5 +9,5 @@
 #include <unistd.h>
 #include "link_layer.h"
 
-void stateMachine(char *buffer, int* state, unsigned int C);
+void stateMachine(unsigned char *buffer, STATE* state, unsigned int C);
 

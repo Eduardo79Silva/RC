@@ -13,7 +13,7 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
                       int nTries, int timeout, const char *filename)
 {
     LinkLayer link; // Link layer struct instance
-    unsigned char buf[] = {0};
+    //unsigned char buf[] = {0};
 
     strncpy(link.serialPort, serialPort, strlen(serialPort) + 1); // Copy serial port name to link layer struct
 
