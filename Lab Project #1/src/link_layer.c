@@ -205,6 +205,7 @@ int llwrite(const unsigned char *buf, int bufSize){
     frame[5+newSize] = FLAG;
 
     int rejected = FALSE;
+    int rejectedFlag = 0;
     unsigned char c;
     STATE state = START;
     unsigned int ctrl_camp = NULL;
@@ -217,13 +218,7 @@ int llwrite(const unsigned char *buf, int bufSize){
             }
             startAlarm(timeout);
         }
-        if(rejected == TRUE){
-            if (write(fd,buf, 5+newSize) == -1){
-                printf("ERROR: Failed to write\n");
-                return -1;
-            }
-            rejected = FALSE;
-        }
+
 
         int bytes = read(fd,&c,1);
 
@@ -232,14 +227,16 @@ int llwrite(const unsigned char *buf, int bufSize){
             if(c == C_RR0 || c == C_RR1 || c == DISC || c == C_REJ0 || c == C_REJ1){
                 if(readCtrlMessage(&c, &state, ctrl_camp) == -1){
                     ctrl_camp = c;
-                    rejected = TRUE;
+                    rejectedFlag = -1;
                 }
             }else{
                 if(readCtrlMessage(&c, &state, ctrl_camp) == -1){
-                    rejected = TRUE;
+                    rejectedFlag = -1;
                 }
             }
         }
+
+
 
         if(state == STOP_ST){
             printf("RECEIVED READY\n");
@@ -249,8 +246,22 @@ int llwrite(const unsigned char *buf, int bufSize){
             else if(c == C_RR1 && NS == 0x00){
                 NS = 0x40;
             }
-            disableAlarm();
-            break;
+            
+            if(rejectedFlag == -1){
+                rejected = TRUE;
+            }
+            else{
+                disableAlarm();
+                break;
+            }
+        }
+
+        if(rejected == TRUE){
+            if (write(fd,buf, 5+newSize) == -1){
+                printf("ERROR: Failed to write\n");
+                return -1;
+            }
+            rejected = FALSE;
         }
 
 

@@ -55,7 +55,7 @@ int readCtrlMessage(unsigned char *buffer, int* state, unsigned int C){
         else if(*buffer == C_REJ0 || *buffer == C_REJ1){
             //NESTE CASO EU NÃO SEI O QUE FAZER, HELPPPPPPPPPPPPP!!!!!!!!!!!!!!!!     <------------------------------------------------
             ctrl_camp = *buffer;
-            *state = START;
+            *state = C_RCV;
             return -1;
         }
         else if(*buffer == FLAG){
@@ -64,6 +64,7 @@ int readCtrlMessage(unsigned char *buffer, int* state, unsigned int C){
         else{
             *state = START;
         }
+        break;
     case C_RCV:
         if(*buffer == BCC(A_TX,ctrl_camp)){
             *state = BCC_OK;
