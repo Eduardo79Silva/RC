@@ -193,11 +193,11 @@ int llwrite(const unsigned char *buf, int bufSize){
     frame[2] = NS;
     frame[3] = BCC(frame[1],frame[2]);
    
+    int newSize = bufSize;
 
 
     //Estamos a criar um novo array que vai conter a informação toda do buf+bcc2 para fazermos bytestuffing de tudo
     unsigned char *newBuffer = (unsigned char *) malloc((bufSize+1) * sizeof(unsigned char));
-    int newSize = bufSize;
 
     
 
@@ -208,16 +208,21 @@ int llwrite(const unsigned char *buf, int bufSize){
     //printf("%x \n", BCC2);
 
     
-    byteStuffing(newBuffer, &newSize);
+    //byteStuffing(newBuffer, &newSize);
 
     for(int i =0 ; i <= newSize; i++){
         frame[4+i] = newBuffer[i];
     }
     
+    printf("Printing frame\n");
+    for(int i = 0; i < newSize+5; i++){
+        printf("%02lx \n", frame[i]);
+    }
+    
     frame[newSize+4] = FLAG;
-    frame = (unsigned char *) realloc(frame, (newSize+4)* sizeof(unsigned char));
+   // frame = (unsigned char *) realloc(frame, (newSize+4)* sizeof(unsigned char));
 
-   
+
 
     int rejected = FALSE;
     int rejectedFlag = 0;
@@ -257,7 +262,7 @@ int llwrite(const unsigned char *buf, int bufSize){
 
 
         if(state == STOP_ST){
-           // printf("RECEIVED READY\n");
+            //printf("RECEIVED READY\n");
             if(c == C_RR0 && NS == 0x40){
                 NS = 0X00;
             }

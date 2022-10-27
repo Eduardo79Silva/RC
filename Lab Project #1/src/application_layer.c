@@ -40,6 +40,7 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
 
         //CREATING THE START CONTROL PACKET 
         char size[255];
+        int bufSize = 0;
         struct stat file;
         stat(filename, &file);
         sprintf(size,"%02lx", file.st_size);
@@ -50,8 +51,10 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
         int nBytes = 200, curByte=0, index=0, nSequence = 0;
         FILE *fileptr;
         
-        int bufSize = getCtrlPacket(filename, 1, &packet);
-        printf("Buffer size: %d\n", bufSize);
+        bufSize = getCtrlPacket(filename, 1, &packet);
+        printf("Buffer size: %d\n", 5+l+strlen(filename));
+
+        
 
         llwrite(packet, bufSize);
 
