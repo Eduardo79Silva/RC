@@ -214,12 +214,13 @@ int llwrite(const unsigned char *buf, int bufSize){
         frame[4+i] = newBuffer[i];
     }
     
+    
+    frame[newSize+5] = FLAG;
     printf("Printing frame\n");
-    for(int i = 0; i < newSize+5; i++){
+    for(int i = 0; i < newSize+6; i++){
         printf("%02lx \n", frame[i]);
     }
     
-    frame[newSize+4] = FLAG;
    // frame = (unsigned char *) realloc(frame, (newSize+4)* sizeof(unsigned char));
 
 
