@@ -183,6 +183,7 @@ int llwrite(const unsigned char *buf, int bufSize){
 
     unsigned char *frame = (unsigned char *) malloc((MAX_PAYLOAD_SIZE + 6)* sizeof(unsigned char));
     unsigned char BCC2 = BCC2creator(buf,bufSize);
+    int idx = 4;
     // printf("Printing buffer\n");
     // for(int i = 0; i < bufSize; i++){
     //     printf("%x \n", buf[i]);
@@ -211,13 +212,12 @@ int llwrite(const unsigned char *buf, int bufSize){
     //byteStuffing(newBuffer, &newSize);
 
     for(int i =0 ; i <= newSize; i++){
-        frame[4+i] = newBuffer[i];
-    }
+        frame[idx++] = newBuffer[i];
+    }    
     
-    
-    frame[newSize+5] = FLAG;
-    printf("Printing frame\n");
-    for(int i = 0; i < newSize+6; i++){
+    frame[idx++] = FLAG;
+    printf("Printing frame\n"); 
+    for(int i = 0; i < idx; i++){
         printf("%02lx \n", frame[i]);
     }
     
