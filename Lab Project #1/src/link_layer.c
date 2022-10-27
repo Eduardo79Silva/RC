@@ -22,6 +22,10 @@
 
 #define BUF_SIZE 256
 
+// SIZE of maximum acceptable payload.
+// Maximum number of bytes that application layer should send to link layer
+#define MAX_PAYLOAD_SIZE 1000
+
 struct termios oldtio;
 struct termios newtio;
 int fd = 0;
@@ -179,10 +183,10 @@ int llwrite(const unsigned char *buf, int bufSize){
 
     unsigned char *frame = (unsigned char *) malloc((MAX_PAYLOAD_SIZE + 6)* sizeof(unsigned char));
     unsigned char BCC2 = BCC2creator(buf,bufSize);
-    printf("Printing buffer\n");
-    for(int i = 0; i < bufSize+6; i++){
-        printf("%x \n", buf[i]);
-    }
+    // printf("Printing buffer\n");
+    // for(int i = 0; i < bufSize; i++){
+    //     printf("%x \n", buf[i]);
+    // }
 
     frame[0] = FLAG;
     frame[1] = A_TX;
@@ -201,7 +205,7 @@ int llwrite(const unsigned char *buf, int bufSize){
         newBuffer[i] = buf[i];
     }
     newBuffer[bufSize] = BCC2;
-    printf("%x \n", BCC2);
+    //printf("%x \n", BCC2);
 
     
     byteStuffing(newBuffer, &newSize);
@@ -211,11 +215,9 @@ int llwrite(const unsigned char *buf, int bufSize){
     }
     
     frame[newSize+4] = FLAG;
+    frame = (unsigned char *) realloc(frame, (newSize+4)* sizeof(unsigned char));
 
-    printf("Printing frame\n");
-    for(int i = 0; i < bufSize+6; i++){
-        printf("%x \n", frame[i]);
-    }
+   
 
     int rejected = FALSE;
     int rejectedFlag = 0;
@@ -234,9 +236,12 @@ int llwrite(const unsigned char *buf, int bufSize){
 
 
         int bytes = read(fd,&c,1);
+        if (bytes == 0){
+            continue;
+        }
 
         if(bytes > -1){
-            printf("RECEIVED: %x\n", c);
+           // printf("RECEIVED: %x\n", c);
             if(c == C_RR0 || c == C_RR1 || c == DISC || c == C_REJ0 || c == C_REJ1){
                 if(readCtrlMessage(&c, &state, ctrl_camp) == -1){
                     ctrl_camp = c;
@@ -252,7 +257,7 @@ int llwrite(const unsigned char *buf, int bufSize){
 
 
         if(state == STOP_ST){
-            printf("RECEIVED READY\n");
+           // printf("RECEIVED READY\n");
             if(c == C_RR0 && NS == 0x40){
                 NS = 0X00;
             }
@@ -292,9 +297,9 @@ int llwrite(const unsigned char *buf, int bufSize){
 ////////////////////////////////////////////////
 
 int llread(unsigned char *packet)
+
 {
-    
-   
+
     return 0;
 }
 

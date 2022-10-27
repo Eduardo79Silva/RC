@@ -1,12 +1,7 @@
 // Application layer protocol implementation
 
 #include "application_layer.h"
-#include "link_layer.h"
-#include "macros.h"
-#include "string.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
+
 
 
 void applicationLayer(const char *serialPort, const char *role, int baudRate,
@@ -44,37 +39,52 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
     if(link.role == LlTx){
 
         //CREATING THE START CONTROL PACKET 
-        FILE *file = fopen(filename, "r"); 
+        char size[255];
+        struct stat file;
+        stat(filename, &file);
+        sprintf(size,"%02lx", file.st_size);
+        int l = strlen(size)/2;
+        int fileSize = file.st_size;
+        unsigned char packet[MAX_PACKET_SIZE], bytes[200], fileEnd = 0;
+        int sizePacket = 0;
+        int nBytes = 200, curByte=0, index=0, nSequence = 0;
+        FILE *fileptr;
         
-        unsigned char startCtrlPacket[MAX_PAYLOAD_SIZE];
-        printf("\nConnection established!\n");
-        int fileSize = ftell(file);
-        int l = 0;
+        int bufSize = getCtrlPacket(filename, 1, &packet);
+        printf("Buffer size: %d\n", bufSize);
 
-        while(fileSize > 1){
-            fileSize = fileSize / 10;
-            l++;
-        }
+        llwrite(packet, bufSize);
 
-        char size[l];
+        // while(!fileEnd){
 
-        sprintf(size, "%d", fileSize);
+        //     //comeco por ler a file stream
+        //     //se deixar de haver coisas para ler corro este codigo
+        //     if(!fread(&curByte, (size_t)1, (size_t) 1, fileptr)){
+        //         fileEnd = 1;
+        //         sizePacket = getDataPacket(bytes, &packet, nSequence++, index);
 
-        startCtrlPacket[0] = 2; // Control camp - start
-        startCtrlPacket[1] = 0; // File Size
-        startCtrlPacket[2] = l; // V camp size
-        for(int i = 0; i < l; i++){
-            startCtrlPacket[3+i] = size[i]; // V camp 
-        }
-        startCtrlPacket[3+l] = 1; // File Name
-        startCtrlPacket[4+l] = strlen(filename); // File name size
-        for(int i = 0; i < strlen(filename); i++){
-            startCtrlPacket[5+l+i] = filename[i]; //Storing file name 
-        }
+        //         if(llwrite(packet, sizePacket) == -1){
+        //             return;
+        //         }
+        //     }
 
-        int bufSize = 6+l+strlen(filename);
+        //     //se o valor de index for igual a nBytes, significa que o ja passamos por nByte elementos
+        //     else if(nBytes == index) {
+        //         sizePacket = getDataPacket(bytes, &packet, nSequence++, index);
 
-        llwrite(startCtrlPacket, bufSize);
+        //         if(llwrite(packet, sizePacket) == -1){
+        //             return;
+        //         }
+
+        //         memset(bytes,0,sizeof(bytes));
+        //         memset(packet,0,sizeof(packet));
+        //         index = 0;
+        //     }
+
+        //     bytes[index++] = curByte;
+        // }
+
+        // fclose(fileptr);
 
 
 
@@ -87,3 +97,6 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
         return;
     }
 }
+
+
+

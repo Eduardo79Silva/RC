@@ -18,6 +18,7 @@
 #define TRUE 1
 
 #define BUFSIZE 256
+#define MAX_PACKET_SIZE 256
 
 typedef enum
 {   
