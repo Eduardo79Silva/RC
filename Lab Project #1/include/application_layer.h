@@ -6,6 +6,12 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "link_layer.h"
+#include "macros.h"
+#include "string.h"
+#include "packet.h"
+#include <math.h>
+#include <sys/stat.h>
 
 // Application layer main function.
 // Arguments:
