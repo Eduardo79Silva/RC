@@ -61,7 +61,7 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
         bufSize = createCtrlPacket(filename, 1, &packet);
         printf("Buffer size: %d\n", 5+l+strlen(filename));
 
-        if(llwrite(packet, bufSize)){
+        if(llwrite(packet, bufSize) == -1){
             printf("Error: llwrite failed!\n");
             return;
         }
@@ -140,7 +140,7 @@ else{
     final = clock();
     float timeElapsed = ((float)final - start)/CLOCKS_PER_SEC;
 
-    if(llclose(&stats, link, timeElapsed)){ // Close link layer
+    if(llclose(&stats, link, timeElapsed) == -1){ // Close link layer
         printf("\nError: Close failed!\n");
         return;
     }

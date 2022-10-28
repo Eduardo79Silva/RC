@@ -8,10 +8,9 @@
 #include <sys/stat.h>
 #include <termios.h>
 #include <unistd.h>
+#include "alarm.h"
 #include "link_layer.h"
 #include "macros.h"
-#include "receiver.h"
-#include "sender.h"
 #include "utils.h"
 
 #define BAUDRATE B38400
