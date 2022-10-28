@@ -8,8 +8,7 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
                       int nTries, int timeout, const char *filename)
 {
     LinkLayer link; // Link layer struct instance
-     int statistics = 1;
-    //unsigned char buf[] = {0};
+     int stats = 1;
 
     strncpy(link.serialPort, serialPort, strlen(serialPort) + 1); // Copy serial port name to link layer struct
 
@@ -30,7 +29,7 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
     link.timeout = timeout; // Copy timeout to link layer struct
     link.baudRate = baudRate; // Copy baud rate to link layer struct
 
-    clock_t start, end;
+    clock_t start, final;
     
     start = clock();
 
@@ -98,9 +97,6 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
 
 }
 else{
-        // 1º chamar llread
-        // 2º ler o packet do llread, se for um control packet START, criar um ficheiro novo, quando receber o close fecho o ficheiro que estou a escrever e paro de chamar llread, se for 0, prox iteraçao chamr llread de novo
-        // 3º escrever os dataPacket no ficheiro que criei
         FILE *fileptr;
         char readBytes = 1;
         
@@ -117,7 +113,7 @@ else{
 
            
             
-            if(packet[0] == 0x03){
+            if(packet[0] == A_TX){
                 printf("\nClosed penguin\n");
                 fclose(fileptr);
                 readBytes = 0;
@@ -133,10 +129,10 @@ else{
             }
         }
     }
-    end = clock();
-    float duration = ((float)end - start)/CLOCKS_PER_SEC;
+    final = clock();
+    float timeElapsed = ((float)final - start)/CLOCKS_PER_SEC;
 
-    llclose(&statistics, link, duration); // Close link layer
+    llclose(&stats, link, timeElapsed); // Close link layer
 }
 
 
