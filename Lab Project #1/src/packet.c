@@ -27,7 +27,7 @@ int getCtrlPacket(char* filename, int start, unsigned char* packet){
 
         for(int i = 0; i < 5+l+strlen(filename); i++){
             packet[i] = startCtrlPacket[i];
-            printf("\nStart Control Packet: %02lx\n", packet[i]);
+            //printf("\nStart Control Packet: %02lx\n", packet[i]);
         }
         
 

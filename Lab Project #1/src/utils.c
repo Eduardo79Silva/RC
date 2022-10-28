@@ -18,7 +18,7 @@ unsigned char BCC2creator(const unsigned char *buf,int bufSize){
     BCC2 = buf[0];
 
     for(int i = 1; i <= bufSize-1; i++){
-        BCC2 ^= buf[i];
+        BCC2 = BCC2 ^ buf[i];
     }
     return BCC2;
 

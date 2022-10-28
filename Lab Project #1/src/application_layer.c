@@ -46,58 +46,92 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
         sprintf(size,"%02lx", file.st_size);
         int l = strlen(size)/2;
         int fileSize = file.st_size;
-        unsigned char packet[MAX_PACKET_SIZE], bytes[200], fileEnd = 0;
+        unsigned char packet[MAX_PACKET_SIZE];
+        unsigned char bytes[200];
+        unsigned char finished = 0;
         int sizePacket = 0;
-        int nBytes = 200, curByte=0, index=0, nSequence = 0;
+        int nBytes = 200, currentByte=0, pos=0, id = 0;
         FILE *fileptr;
         
         bufSize = getCtrlPacket(filename, 1, &packet);
         printf("Buffer size: %d\n", 5+l+strlen(filename));
 
-        
-
         llwrite(packet, bufSize);
+        printf("Start Control Packet sent!\n");
 
-        // while(!fileEnd){
+        fileptr = fopen(filename, "rb");
 
-        //     //comeco por ler a file stream
-        //     //se deixar de haver coisas para ler corro este codigo
-        //     if(!fread(&curByte, (size_t)1, (size_t) 1, fileptr)){
-        //         fileEnd = 1;
-        //         sizePacket = getDataPacket(bytes, &packet, nSequence++, index);
+        while(!finished){
+            if(!fread(&currentByte,(size_t)1 , (size_t)1, fileptr)){
+                finished = 1;
+                sizePacket = getDataPacket(bytes,&packet,id++, pos);
 
-        //         if(llwrite(packet, sizePacket) == -1){
-        //             return;
-        //         }
-        //     }
+                if(llwrite(packet, sizePacket) == -1){
+                    return;
+                }
+            }
+            else if(nBytes == pos){
+                sizePacket = getDataPacket(bytes,&packet,id++, pos);
 
-        //     //se o valor de index for igual a nBytes, significa que o ja passamos por nByte elementos
-        //     else if(nBytes == index) {
-        //         sizePacket = getDataPacket(bytes, &packet, nSequence++, index);
+                if(llwrite(packet,sizePacket) == -1)
+                    return;
+                
+                pos = 0;
+                memset(bytes,0,sizeof(bytes));
+                memset(packet,0,sizeof(packet));
+            }
+            bytes[pos++] = currentByte;
+        }
 
-        //         if(llwrite(packet, sizePacket) == -1){
-        //             return;
-        //         }
+        fclose(fileptr);
 
-        //         memset(bytes,0,sizeof(bytes));
-        //         memset(packet,0,sizeof(packet));
-        //         index = 0;
-        //     }
+        sizePacket = getCtrlPacket(filename,0,&packet);
 
-        //     bytes[index++] = curByte;
-        // }
-
-        // fclose(fileptr);
-
-
-
-
-    }
+        if(llwrite(packet, sizePacket) == -1){
+            return;
+        }
 
 
     if (llclose(0) < 0){ // If llclose fails
         printf("\nError: Close failed!\n");
         return;
+    }
+}
+else{
+        // 1º chamar llread
+        // 2º ler o packet do llread, se for um control packet START, criar um ficheiro novo, quando receber o close fecho o ficheiro que estou a escrever e paro de chamar llread, se for 0, prox iteraçao chamr llread de novo
+        // 3º escrever os dataPacket no ficheiro que criei
+        FILE *fileptr;
+        char readBytes = 1;
+        
+        
+
+        while(readBytes){
+        
+            unsigned char packet[600] = {0};
+            int sizeOfPacket = 0, index = 0;
+            
+            if(llread(&packet, &sizeOfPacket)==-1){
+                continue;
+            }
+
+           
+            
+            if(packet[0] == 0x03){
+                printf("\nClosed penguin\n");
+                fclose(fileptr);
+                readBytes = 0;
+            }
+            else if(packet[0]==0x02){
+                printf("\nOpened penguin\n");
+                fileptr = fopen(filename, "wb");   
+            }
+            else{
+                for(int i=4; i<sizeOfPacket; i++){
+                    fputc(packet[i], fileptr);
+                }
+            }
+        }
     }
 }
 
