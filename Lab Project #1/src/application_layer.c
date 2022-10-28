@@ -114,7 +114,7 @@ else{
            
             
             if(packet[0] == A_TX){
-                printf("\n#     Closed Tux File\n");
+                printf("\n#     Closed Tux Filfe\n");
                 fclose(fileptr);
                 readBytes = 0;
             }

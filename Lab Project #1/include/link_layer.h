@@ -1,8 +1,6 @@
 // Link layer header.
 // NOTE: This file must not be changed.
 
-#include <time.h>
-
 #ifndef _LINK_LAYER_H_
 #define _LINK_LAYER_H_
 

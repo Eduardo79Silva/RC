@@ -173,11 +173,16 @@ int llwrite(const unsigned char *buf, int bufSize){
 
     printf("\n###########################__WRITING__#############################\n\n");
 
+    //---Variables---
+
     unsigned char frame[MAX_PAYLOAD_SIZE+6] = {0};
     unsigned char BCC2 = BCC2creator(buf,bufSize);
     unsigned char BCC = 0x00, responses[5] = {0};
+    unsigned char newBuffer[bufSize+1];
     int STOP = 0, ctrlRX = SHIFT(!NS, 7) | C_RR0;
     int idx = 4;
+
+    //---Frame creation---
 
     frame[0] = FLAG;
     frame[1] = A_TX;
@@ -186,34 +191,17 @@ int llwrite(const unsigned char *buf, int bufSize){
    
     int newSize = bufSize;
 
-
     //Estamos a criar um novo array que vai conter a informação toda do buf+bcc2 para fazermos bytestuffing de tudo
-    unsigned char newBuffer[bufSize+1];
-
-    
-
     for(int i = 0; i<=bufSize; i++){
         newBuffer[i] = buf[i];
     }
     newBuffer[bufSize] = BCC2;
 
-
-    for(int i=0; i<=bufSize; i++){
-        if(newBuffer[i]==FLAG){
-            frame[idx++]=0x7D;
-            frame[idx++]=0x5e;
-            continue;
-        }
-        else if(newBuffer[i]==0x7D){
-            frame[idx++]=0x7D;
-            frame[idx++]=0x5D;
-            continue;
-        }
-
-        frame[idx++]=newBuffer[i];
-    }
+    idx = byte_stuffing(&newBuffer, bufSize,  &frame, idx);
 
     frame[idx++] = FLAG;
+
+    //---Frame sending---
 
     while(!STOP){
         if(!alarmEnabled){
@@ -251,6 +239,7 @@ int llwrite(const unsigned char *buf, int bufSize){
 
     printf("\n#     llwrite: Frame sent successfully\n");
 
+    //---Change Sender Number---
 
     if(NS){
         NS = 0;
@@ -358,19 +347,7 @@ int llread(unsigned char *packet, int *sizeOfPacket)
 
     //Destuffing
 
-    for(int i=0; i<sizeInfo; i++){
-        if(frame[i] == 0x7D && frame[i+1]==0x5e){
-            packet[idx++] = FLAG;
-            i++;
-        }
-
-        else if(frame[i] == 0x7D && frame[i+1]==0x5d){
-            packet[idx++] = 0x7D;
-            i++;
-        }
-
-        else {packet[idx++] = frame[i];}
-    }
+    idx = byte_destuffing(&frame, sizeInfo, packet, idx);
 
     //--------------------BCC2--------------------
 
