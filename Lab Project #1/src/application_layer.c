@@ -114,12 +114,12 @@ else{
            
             
             if(packet[0] == A_TX){
-                printf("\nClosed penguin\n");
+                printf("\n#     Closed Tux File\n");
                 fclose(fileptr);
                 readBytes = 0;
             }
             else if(packet[0]==0x02){
-                printf("\nOpened penguin\n");
+                printf("\n#     Opened Tux File\n");
                 fileptr = fopen(filename, "wb");   
             }
             else{

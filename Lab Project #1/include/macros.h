@@ -13,6 +13,9 @@
 #define ESC 0x7D
 #define DISC 0x0B
 #define BCC(x, y) (x^y)
+#define SHIFT(x, y) (x<<y)
+
+
 
 #define FALSE 0
 #define TRUE 1

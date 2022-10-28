@@ -66,7 +66,6 @@ void stateMachine(unsigned char *buffer, STATE* state, unsigned int C) // State 
         case BCC_OK: // BCC state
             //printf("State 4\n");
             if (*buffer == FLAG){ // Check if the received byte is a STOP FLAG
-                printf("State machine finished\n");
                 *state = STOP_ST;
             }
             else{
