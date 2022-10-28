@@ -39,10 +39,11 @@ int createCtrlPacket(char* filename, int start, unsigned char* packet){
 
 int createDataPacket(unsigned char* bytes, unsigned char* packet, int nSequence, int nBytes){
 
-	int l2 = div(nBytes, 256).quot , l1 = div(nBytes, 256).rem;
+    int l1 = nBytes%BUFSIZE;
+	int l2 = nBytes/BUFSIZE;
 
-    packet[0] = 0x01;
-	packet[1] = div(nSequence, 255).rem;
+    packet[0] = 1;
+	packet[1] = nSequence%255;
     packet[2] = l2;
     packet[3] = l1;
 

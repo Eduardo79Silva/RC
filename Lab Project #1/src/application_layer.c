@@ -39,6 +39,7 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
         return;
     }
 
+    int checkError = 0;
 
     if(link.role == LlTx){
 
@@ -49,7 +50,7 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
         stat(filename, &file);
         sprintf(size,"%02lx", file.st_size);
         int l = strlen(size)/2;
-        int fileSize = file.st_size;
+        //int fileSize = file.st_size;
         unsigned char packet[MAX_PACKET_SIZE];
         unsigned char bytes[200];
         unsigned char finished = 0;
@@ -60,7 +61,10 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
         bufSize = createCtrlPacket(filename, 1, &packet);
         printf("Buffer size: %d\n", 5+l+strlen(filename));
 
-        llwrite(packet, bufSize);
+        if(llwrite(packet, bufSize)){
+            printf("Error: llwrite failed!\n");
+            return;
+        }
         printf("Start Control Packet sent!\n");
 
         fileptr = fopen(filename, "rb");
@@ -71,16 +75,18 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
                 
                 finished = 1;
                 sizePacket = createDataPacket(bytes,&packet,id++, pos);
-            
 
-                if(llwrite(packet, sizePacket) == -1){
+                checkError = llwrite(packet, sizePacket); //check de erros
+
+                if(checkError == -1)
                     return;
-                }
             }
             else if(nBytes == pos){
                 sizePacket = createDataPacket(bytes,&packet,id++, pos);
 
-                if(llwrite(packet,sizePacket) == -1)
+                checkError = llwrite(packet,sizePacket); //check de erros
+
+                if( checkError == -1) 
                     return;
                 
                 pos = 0;
@@ -93,48 +99,51 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
         sizePacket = createCtrlPacket(filename,0,&packet);
         fclose(fileptr);
 
-        if(llwrite(packet, sizePacket) == -1){
+        checkError = llwrite(packet, sizePacket);
+
+        if( checkError == -1)
             return;
-        }
 
 }
 else{
         FILE *fileptr;
         char readBytes = 1;
         
-        
 
         while(readBytes){
         
             unsigned char packet[600] = {0};
-            int sizeOfPacket = 0, index = 0;
-            
-            if(llread(&packet, &sizeOfPacket)==-1){
-                continue;
-            }
+            int index = 0;
+            int pSize = 0;
 
-           
-            
-            if(packet[0] == A_TX){
-                printf("\n#     Closed Tux Filfe\n");
-                fclose(fileptr);
-                readBytes = 0;
-            }
-            else if(packet[0]==0x02){
+            if(llread(&packet, &pSize)==-1)
+                continue;
+
+            if(packet[0]==0x02){
                 printf("\n#     Opened Tux File\n");
                 fileptr = fopen(filename, "wb");   
             }
+            else if(packet[0] == A_TX){
+                printf("\n#     Closed Tux File\n");
+                fclose(fileptr);
+                readBytes = 0;
+            }
             else{
-                for(int i=4; i<sizeOfPacket; i++){
+                for(int i=4; i<pSize; i++){
                     fputc(packet[i], fileptr);
                 }
             }
         }
     }
+
+
     final = clock();
     float timeElapsed = ((float)final - start)/CLOCKS_PER_SEC;
 
-    llclose(&stats, link, timeElapsed); // Close link layer
+    if(llclose(&stats, link, timeElapsed)){ // Close link layer
+        printf("\nError: Close failed!\n");
+        return;
+    }
 }
 
 

@@ -130,6 +130,12 @@ int llopen(LinkLayer connectionParameters)
 
         }
 
+        if(alarmCount >= connectionParameters.nRetransmissions){
+            printf("\n#     UA NOT RECEIVED\n");
+            close(fd);
+            return -1;
+        }
+
     } else if(connectionParameters.role == LlRx) {
 
         unsigned char cmdFrame[5] = {0};
@@ -177,7 +183,7 @@ int llwrite(const unsigned char *buf, int bufSize){
 
     unsigned char frame[MAX_PAYLOAD_SIZE+6] = {0};
     unsigned char BCC2 = BCC2creator(buf,bufSize);
-    unsigned char BCC = 0x00, responses[5] = {0};
+    unsigned char responses[5] = {0};
     unsigned char newBuffer[bufSize+1];
     int STOP = 0, ctrlRX = SHIFT(!NS, 7) | C_RR0;
     int idx = 4;
@@ -189,7 +195,6 @@ int llwrite(const unsigned char *buf, int bufSize){
     frame[2] = SHIFT(NS, 6);
     frame[3] = BCC(frame[1],frame[2]);
    
-    int newSize = bufSize;
 
     //Estamos a criar um novo array que vai conter a informação toda do buf+bcc2 para fazermos bytestuffing de tudo
     for(int i = 0; i<=bufSize; i++){
@@ -229,7 +234,6 @@ int llwrite(const unsigned char *buf, int bufSize){
         }
 
         if(alarmCount >= nRetransmissions){
-            printf("\n%d\n", nRetransmissions);
             printf("\n#     llwrite error: Exceeded number of tries when sending frame\n");
             STOP = 1;
             close(fd);
@@ -292,9 +296,9 @@ int llread(unsigned char *packet, int *packetSize)
 
 
     if(BCC(frame[1],frame[2]) != frame[3] || frame[2] != control){
-        printf("\n#     I Frame not received right. Protocol error. Send REJ.\n");
+        printf("\n#     Wrong I Frame - Protocol error\n");
         responseFrame[2] = SHIFT(NR, 7) | 0x01;
-        responseFrame[3] = (responseFrame[1], responseFrame[2]);
+        responseFrame[3] = BCC(responseFrame[1], responseFrame[2]);
         write(fd, responseFrame, 5);
         printf("\n#     -------------");
         printf("\n#     |    REJ    |");
@@ -320,7 +324,7 @@ int llread(unsigned char *packet, int *packetSize)
     int len = 0; 
 
     if(packet[4]==1){  
-        len = +packet[7]+10+BUFSIZE*packet[6]; 
+        len = packet[7]+10+BUFSIZE*packet[6]; 
         for(int i=4; i<len-2; i++){
             BCC2 = BCC(BCC2, packet[i]);
         }
@@ -414,7 +418,7 @@ int llclose(int showStatistics, LinkLayer connectionParameters, float runTime)
 
         unsigned char cmdFrame[6] = {0}, responses[6] = {0};
         unsigned char STOP = 0;
-        unsigned char UA = 0;
+        //unsigned char UA = 0;
 
         cmdFrame[0] = FLAG;
         cmdFrame[1] = A_TX;
@@ -481,7 +485,8 @@ int llclose(int showStatistics, LinkLayer connectionParameters, float runTime)
     else{
         alarmCount = 0;
 
-        unsigned char cmdFrame[6] = {0}, responses[6] = {0};
+        unsigned char cmdFrame[6] = {0};
+        unsigned char responses[6] = {0};
 
         cmdFrame[0] = FLAG;
         cmdFrame[1] = A_TX;
@@ -505,35 +510,20 @@ int llclose(int showStatistics, LinkLayer connectionParameters, float runTime)
             cmdFrame[3] = BCC(cmdFrame[1],cmdFrame[2]);
             responses[5] = '\0';
 
-            if(result != -1 && responses != 0 && responses[0]==FLAG){
-                if(strcasecmp(cmdFrame, responses) != 0){
-                    printf("\n#     Wrong DISC: 0x%02x%02x%02x%02x%02x\n", responses[0], responses[1], responses[2], responses[3], responses[4]);
-                    alarmEnabled = FALSE;
-                    continue;
-                }
-                
-                else{   
-                    printf("\n#     Correct DISC: 0x%02x%02x%02x%02x%02x\n", responses[0], responses[1], responses[2], responses[3], responses[4]);
-                    alarmEnabled = FALSE;
-                    
-                    cmdFrame[1] = 0x01;
-                    cmdFrame[2] = 0x07;
-                    cmdFrame[3] = BCC(cmdFrame[1],cmdFrame[2]);
+            int ans = closeStateMachine(&cmdFrame, &responses, result, fd);
 
-                    int frameBytes = write(fd, cmdFrame, 5);
-
-                    close(fd);
-
-                    printf("\n#     Sent UA, %d bytes written.\n\nWe will miss you Tux! <3\n", frameBytes);
-                    return 1;
-
-                }
+            if(ans == -1){
+                continue;
+            }
+            else if(ans == 1){
+                return 1;
             }
 
+            
         }
 
         if(alarmCount >= nRetransmissions){
-            printf("\n#     Alarm limit reached, DISC message not sent\n");
+            printf("\n#     Alarm Triggered! DISC not sent\n");
             close(fd);
             return -1;
         }
@@ -546,7 +536,7 @@ int llclose(int showStatistics, LinkLayer connectionParameters, float runTime)
     if(showStatistics){
         printf("\n###########################__STATS__#############################\n\n");
 
-        printf("\n#    Number of packets sent: %d\n#    Size of data packets in information frame: %d\n#    Total run time: %f\n#    Average time per packet: %f\n", lastNum, 200, runTime, runTime/200.0);
+        printf("\n#    Number of Packets: %d\n#    Size of data packets: %d\n#    Total time: %f\n#    Average time/packet: %f\n", lastNum, 200, runTime, runTime/200.0);
 
         printf("\n#################################################################\n");
     }

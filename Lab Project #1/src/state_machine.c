@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <termios.h>
+#include <alarm.h>
 #include <unistd.h>
 #include "macros.h"
 #include "state_machine.h"
@@ -121,4 +122,32 @@ int dataStateMachine(unsigned char *frame, STATE* st, unsigned char *cmdFrame, u
         return STOP;
 }
 
+int closeStateMachine(unsigned char *cmdFrame, unsigned char *responses, int result, int fd){
 
+    if(result != -1 && responses != 0 && responses[0]==FLAG){
+                if(strcasecmp(cmdFrame, responses) != 0){
+                    printf("\n#     Wrong DISC: 0x%02x%02x%02x%02x%02x\n", responses[0], responses[1], responses[2], responses[3], responses[4]);
+                    alarmEnabled = FALSE;
+                    return -1;
+                }
+                
+                else{   
+                    printf("\n#     Correct DISC: 0x%02x%02x%02x%02x%02x\n", responses[0], responses[1], responses[2], responses[3], responses[4]);
+                    alarmEnabled = FALSE;
+                    
+                    cmdFrame[1] = 1;
+                    cmdFrame[2] = 0x07;
+                    cmdFrame[3] = BCC(cmdFrame[1],cmdFrame[2]);
+
+                    int frameBytes = write(fd, cmdFrame, 5);
+
+                    close(fd);
+
+                    printf("\n#     Sent UA, %d bytes written.\n\nWe will miss you Tux! <3\n", frameBytes);
+                    return 1;
+
+                }
+            }
+
+    return 0;
+}
