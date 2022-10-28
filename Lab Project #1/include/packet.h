@@ -8,6 +8,6 @@
 #include <sys/stat.h>
 
 
-int getControlPacket(char* filename, int start, unsigned char* packet);
+int createControlPacket(char* filename, int start, unsigned char* packet);
 
-int getDataPacket(unsigned char* bytes, unsigned char* packet, int nSequence, int nBytes);
+int createDataPacket(unsigned char* bytes, unsigned char* packet, int nSequence, int nBytes);

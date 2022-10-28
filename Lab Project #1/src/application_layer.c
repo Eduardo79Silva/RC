@@ -57,7 +57,7 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
         int nBytes = 200, currentByte=0, pos=0, id = 0;
         FILE *fileptr;
         
-        bufSize = getCtrlPacket(filename, 1, &packet);
+        bufSize = createCtrlPacket(filename, 1, &packet);
         printf("Buffer size: %d\n", 5+l+strlen(filename));
 
         llwrite(packet, bufSize);
@@ -66,16 +66,19 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
         fileptr = fopen(filename, "rb");
 
         while(!finished){
+            //No caso de não conseguir ler mais envia o packet
             if(!fread(&currentByte,(size_t)1 , (size_t)1, fileptr)){
+                
                 finished = 1;
-                sizePacket = getDataPacket(bytes,&packet,id++, pos);
+                sizePacket = createDataPacket(bytes,&packet,id++, pos);
+            
 
                 if(llwrite(packet, sizePacket) == -1){
                     return;
                 }
             }
             else if(nBytes == pos){
-                sizePacket = getDataPacket(bytes,&packet,id++, pos);
+                sizePacket = createDataPacket(bytes,&packet,id++, pos);
 
                 if(llwrite(packet,sizePacket) == -1)
                     return;
@@ -87,9 +90,8 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
             bytes[pos++] = currentByte;
         }
 
+        sizePacket = createCtrlPacket(filename,0,&packet);
         fclose(fileptr);
-
-        sizePacket = getCtrlPacket(filename,0,&packet);
 
         if(llwrite(packet, sizePacket) == -1){
             return;

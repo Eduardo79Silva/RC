@@ -1,6 +1,6 @@
 #include "packet.h"
 
-int getCtrlPacket(char* filename, int start, unsigned char* packet){
+int createCtrlPacket(char* filename, int start, unsigned char* packet){
         char size[255];
         struct stat file;
         stat(filename, &file);
@@ -37,7 +37,7 @@ int getCtrlPacket(char* filename, int start, unsigned char* packet){
 
 }
 
-int getDataPacket(unsigned char* bytes, unsigned char* packet, int nSequence, int nBytes){
+int createDataPacket(unsigned char* bytes, unsigned char* packet, int nSequence, int nBytes){
 
 	int l2 = div(nBytes, 256).quot , l1 = div(nBytes, 256).rem;
 

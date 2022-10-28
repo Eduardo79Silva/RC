@@ -256,7 +256,7 @@ int llwrite(const unsigned char *buf, int bufSize){
 ////////////////////////////////////////////////
 // LLREAD
 ////////////////////////////////////////////////
-int llread(unsigned char *packet, int *sizeOfPacket)
+int llread(unsigned char *packet, int *packetSize)
 {   
     
     printf("\n###########################__READING__#############################\n\n");
@@ -292,14 +292,14 @@ int llread(unsigned char *packet, int *sizeOfPacket)
 
 
     if(BCC(frame[1],frame[2]) != frame[3] || frame[2] != control){
-        printf("\n#     InfoFrame not received correctly. Protocol error. Sending REJ.\n");
+        printf("\n#     I Frame not received right. Protocol error. Send REJ.\n");
         responseFrame[2] = SHIFT(NR, 7) | 0x01;
-        responseFrame[3] = responseFrame[1] ^ responseFrame[2];
+        responseFrame[3] = (responseFrame[1], responseFrame[2]);
         write(fd, responseFrame, 5);
         printf("\n#     -------------");
         printf("\n#     |    REJ    |");
         printf("\n#     -------------");
-        printf("\n#     Size of REJ: %d\nREJ: 0x", 5);
+        printf("\n#     REJ Size: %d\nREJ: 0x", 5);
 
         for(int i=0; i<5; i++){
             printf("#   %02X ", responseFrame[i]);
@@ -317,71 +317,52 @@ int llread(unsigned char *packet, int *sizeOfPacket)
 
     //--------------------BCC2--------------------
 
-    int size = 0; 
+    int len = 0; 
 
-    if(packet[4]==0x01){
-        size = 256*packet[6]+packet[7]+4 +6; 
-        for(int i=4; i<size-2; i++){
-            BCC2 = BCC2 ^ packet[i];
+    if(packet[4]==1){  
+        len = +packet[7]+10+BUFSIZE*packet[6]; 
+        for(int i=4; i<len-2; i++){
+            BCC2 = BCC(BCC2, packet[i]);
         }
     }
     
     else{
-        size += packet[6]+ 3 + 4; 
-        size += packet[size+1] + 2 +2; 
+        len = len + packet[6]+ 7; 
+        len = len + packet[len+1] + 4; 
 
-        for(int i=4; i<size-2; i++){
-            BCC2 = BCC2 ^ packet[i];
+        for(int i=4; i<len-2; i++){
+            BCC2 = BCC(BCC2, packet[i]);
         }
     }
 
-    if(packet[size-2] == BCC2){
-
+    if(packet[len-2] == BCC2){
         if(packet[4]==0x01){
             if(frame[5] == lastNum){
-                printf("\n#     InfoFrame received correctly. Repeated Frame. Sending RR.\n");
                 responseFrame[2] = SHIFT(NR, 7) | C_RR0;
-                responseFrame[3] = responseFrame[1] ^ responseFrame[2];
+                responseFrame[3] = (responseFrame[1], responseFrame[2]);
                 write(fd, responseFrame, 5);
+                printf("\n#     Duplicated I Frame received.\n");
                 return -1;
             }   
             else{
                 lastNum = frame[5];
             }
         }
-        printf("\n#     InfoFrame received correctly. Sending RR.\n");
         responseFrame[2] = SHIFT(NR, 7) | C_RR0;
-        responseFrame[3] = responseFrame[1] ^ responseFrame[2];
+        responseFrame[3] = BCC(responseFrame[1], responseFrame[2]);
         write(fd, responseFrame, 5);
+        printf("\n#     Received I Frame.\n");
     }
-    
     else {
-        printf("\n#     InfoFrame not received correctly. Error in data packet. Sending REJ.\n");
         responseFrame[2] = SHIFT(NR, 7) | 0x01;
-        responseFrame[3] = responseFrame[1] ^ responseFrame[2];
+        responseFrame[3] = BCC(responseFrame[1] , responseFrame[2]);
         write(fd, responseFrame, 5);
+        printf("\n#     Didn't receive I frame\n");
 
         return -1;
     }
 
-    (*sizeOfPacket) = size;
-
-    //--------------------Reset Variables--------------------
-
-    idx = 0;
-    
-    for(int i=4; i<(*sizeOfPacket)-2; i++){
-        aux[idx++] = packet[i];
-    }
-
-    
-    (*sizeOfPacket) = size - 6;
-
-    memset(packet,0,sizeof(packet));
-
-    for(int i=0; i<(*sizeOfPacket); i++){
-        packet[i] = aux[i];
-    }
+    (*packetSize) = len;
 
     //--------------------Nr Change--------------------
 
@@ -390,6 +371,29 @@ int llread(unsigned char *packet, int *sizeOfPacket)
         NR = 0;
     }
     else {NR = 1;}
+
+
+    //--------------------Reset Variables--------------------
+
+    idx = 0;
+    
+    for(int i=4; i<(*packetSize)-2; i++){
+        aux[idx++] = packet[i];
+    }
+
+
+    for(int i = 0; i < (*packetSize); i++){
+        packet[i] = 0;
+    }
+
+    (*packetSize) = len - 6;
+
+
+    for(int i=0; i<(*packetSize); i++){
+        packet[i] = aux[i];
+    }
+
+
 
     printf("\n#################################################################\n\n");
 
@@ -409,12 +413,13 @@ int llclose(int showStatistics, LinkLayer connectionParameters, float runTime)
     if(connectionParameters.role == LlRx){
 
         unsigned char cmdFrame[6] = {0}, responses[6] = {0};
-        unsigned char STOP = 0, UA = 0;
+        unsigned char STOP = 0;
+        unsigned char UA = 0;
 
         cmdFrame[0] = FLAG;
         cmdFrame[1] = A_TX;
         cmdFrame[2] = DISC;
-        cmdFrame[3] = cmdFrame[1]^cmdFrame[2];
+        cmdFrame[3] = BCC(cmdFrame[1],cmdFrame[2]);
         cmdFrame[4] = FLAG;
         cmdFrame[5] = '\0';
 
@@ -430,29 +435,29 @@ int llclose(int showStatistics, LinkLayer connectionParameters, float runTime)
 
 
             else if(strcasecmp(cmdFrame, responses) == 0){
-                printf("\n#     DISC message received. Responding now.\n");
+                printf("\n#     Received DISC.\n");
                 
-                cmdFrame[1] = 0x01;
-                cmdFrame[3] = cmdFrame[1]^cmdFrame[2];
+                cmdFrame[1] = 1;
+                cmdFrame[3] = BCC(cmdFrame[1],cmdFrame[2]);
 
                 while(alarmCount < nRetransmissions){
 
-                    if(!alarmEnabled){
-                        printf("\n#     DISC message sent, %d bytes written\n", 5);
+                    if(alarmEnabled == 0){
+                        printf("\n#     Sent DISC, %d bytes written\n", 5);
                         write(fd, cmdFrame, 5);
                         startAlarm(timeout);
                     }
                     
                     int result = read(fd, responses, 5);
-                    if(result != -1 && responses != 0 && responses[0]==FLAG){
-                        if(responses[2] != 0x07 || (responses[3] != (responses[1]^responses[2]))){
-                            printf("\n#     UA not correct: 0x%02x%02x%02x%02x%02x\n", responses[0], responses[1], responses[2], responses[3], responses[4]);
+                    if(result >=0 && responses[0]==FLAG && responses != 0 ){
+                        if(responses[2] != 0x07 || (responses[3] != BCC(responses[1],responses[2]))){
+                            printf("\n#     Wrong UA: 0x%02x%02x%02x%02x%02x\n", responses[0], responses[1], responses[2], responses[3], responses[4]);
                             alarmEnabled = FALSE;
                             continue;
                         }
                         
                         else{   
-                            printf("\n#     UA correctly received: 0x%02x%02x%02x%02x%02x\n", responses[0], responses[1], responses[2], responses[3], responses[4]);
+                            printf("\n#     Good UA: 0x%02x%02x%02x%02x%02x\n", responses[0], responses[1], responses[2], responses[3], responses[4]);
                             alarmEnabled = FALSE;
                             close(fd);
                             break;
@@ -481,7 +486,7 @@ int llclose(int showStatistics, LinkLayer connectionParameters, float runTime)
         cmdFrame[0] = FLAG;
         cmdFrame[1] = A_TX;
         cmdFrame[2] = DISC;
-        cmdFrame[3] = cmdFrame[1]^cmdFrame[2];
+        cmdFrame[3] = BCC(cmdFrame[1], cmdFrame[2]);
         cmdFrame[4] = FLAG;
         cmdFrame[5] = '\0';
 
@@ -490,36 +495,36 @@ int llclose(int showStatistics, LinkLayer connectionParameters, float runTime)
             if(!alarmEnabled){
                 
                 int frameBytes = write(fd, cmdFrame, 5);
-                printf("\n#     DISC message sent, %d bytes written\n", frameBytes);
+                printf("\n#     Sent DISC, %d bytes written\n", frameBytes);
                 startAlarm(timeout);
             }
             
             int result = read(fd, responses, 5);
 
-            cmdFrame[1] = 0x01;
-            cmdFrame[3] = cmdFrame[1]^cmdFrame[2];
+            cmdFrame[1] = 1;
+            cmdFrame[3] = BCC(cmdFrame[1],cmdFrame[2]);
             responses[5] = '\0';
 
             if(result != -1 && responses != 0 && responses[0]==FLAG){
                 if(strcasecmp(cmdFrame, responses) != 0){
-                    printf("\n#     DISC not correct: 0x%02x%02x%02x%02x%02x\n", responses[0], responses[1], responses[2], responses[3], responses[4]);
+                    printf("\n#     Wrong DISC: 0x%02x%02x%02x%02x%02x\n", responses[0], responses[1], responses[2], responses[3], responses[4]);
                     alarmEnabled = FALSE;
                     continue;
                 }
                 
                 else{   
-                    printf("\n#     DISC correctly received: 0x%02x%02x%02x%02x%02x\n", responses[0], responses[1], responses[2], responses[3], responses[4]);
+                    printf("\n#     Correct DISC: 0x%02x%02x%02x%02x%02x\n", responses[0], responses[1], responses[2], responses[3], responses[4]);
                     alarmEnabled = FALSE;
                     
                     cmdFrame[1] = 0x01;
                     cmdFrame[2] = 0x07;
-                    cmdFrame[3] = cmdFrame[1]^cmdFrame[2];
+                    cmdFrame[3] = BCC(cmdFrame[1],cmdFrame[2]);
 
                     int frameBytes = write(fd, cmdFrame, 5);
 
                     close(fd);
 
-                    printf("\n#     UA message sent, %d bytes written.\n\nWe will miss you Tux! <3\n", frameBytes);
+                    printf("\n#     Sent UA, %d bytes written.\n\nWe will miss you Tux! <3\n", frameBytes);
                     return 1;
 
                 }
