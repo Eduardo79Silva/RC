@@ -204,6 +204,7 @@ int llwrite(const unsigned char *buf, int bufSize){
     //---Frame sending---
 
     while(!STOP){
+
         if(!alarmEnabled){
             write(fd, frame, idx);
             printf("\n#     Control Packet sent NS=%d\n", NS);
@@ -214,14 +215,14 @@ int llwrite(const unsigned char *buf, int bufSize){
 
         if(result != -1 && responses != 0){
 
-            if(responses[2] != (ctrlRX) || (responses[3] != (responses[1]^responses[2]))){
-                    printf("\n#     RR not correct: 0x%02x%02x%02x%02x%02x\n", responses[0], responses[1], responses[2], responses[3], responses[4]);
+            if(responses[2] != (ctrlRX) || (responses[3] != BCC(responses[1],responses[2]))){
+                    printf("\n#     REJ: 0x%02x%02x%02x%02x%02x\n", responses[0], responses[1], responses[2], responses[3], responses[4]);
                     alarmEnabled = FALSE;
                     continue;
             }
             
             else{
-                printf("\n#     RR correctly received: 0x%02x%02x%02x%02x%02x\n", responses[0], responses[1], responses[2], responses[3], responses[4]);
+                printf("\n#     RR: 0x%02x%02x%02x%02x%02x\n", responses[0], responses[1], responses[2], responses[3], responses[4]);
                 alarmEnabled = FALSE;
                 STOP = 1;
             }
@@ -278,45 +279,10 @@ int llread(unsigned char *packet, int *sizeOfPacket)
             
         }
     
+        //-----STATE MACHINE-----
         
-        switch (st)
-        {
-        case START:
-            if(cmdFrame[0] == FLAG){
-                st = FLAG_RCV;
-                frame[sizeInfo++] = cmdFrame[0];
-            }
-            break;
+        STOP = dataStateMachine(&frame, &st, &cmdFrame, &reading, &sizeInfo);
 
-        case FLAG_RCV:
-            if(cmdFrame[0] != FLAG){
-            
-                st = A_RCV;
-                frame[sizeInfo++] = cmdFrame[0];
-            }
-            else{
-                memset(frame, 0, 600);
-                st = FLAG_RCV;
-                sizeInfo = 0;
-                frame[sizeInfo++] = cmdFrame[0];
-            }
-            break;
-
-        case A_RCV:
-             if(cmdFrame[0] != FLAG){
-                frame[sizeInfo++] = cmdFrame[0];
-            }
-            else if(cmdFrame[0] == FLAG){
-            
-                STOP = TRUE;
-                frame[sizeInfo++] = cmdFrame[0];
-                reading = FALSE;
-            }
-            break;
-        
-        default:
-            break;
-        }
     }
 
     responseFrame[0] = FLAG;
@@ -325,7 +291,7 @@ int llread(unsigned char *packet, int *sizeOfPacket)
     responseFrame[4] = FLAG;
 
 
-    if((frame[1]^frame[2]) != frame[3] || frame[2] != control){
+    if(BCC(frame[1],frame[2]) != frame[3] || frame[2] != control){
         printf("\n#     InfoFrame not received correctly. Protocol error. Sending REJ.\n");
         responseFrame[2] = SHIFT(NR, 7) | 0x01;
         responseFrame[3] = responseFrame[1] ^ responseFrame[2];

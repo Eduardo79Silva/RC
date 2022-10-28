@@ -77,4 +77,48 @@ void stateMachine(unsigned char *buffer, STATE* state, unsigned int C) // State 
 
 }
 
+int dataStateMachine(unsigned char *frame, STATE* st, unsigned char *cmdFrame, unsigned char *reading, unsigned int *sizeInfo){
+    unsigned char STOP = FALSE;
+    switch (*st)
+        {
+        case START:
+            if(cmdFrame[0] == FLAG){
+                *st = FLAG_RCV;
+                frame[(*sizeInfo)++] = cmdFrame[0];
+            }
+            break;
+
+        case FLAG_RCV:
+            if(cmdFrame[0] != FLAG){
+            
+                *st = A_RCV;
+                frame[(*sizeInfo)++] = cmdFrame[0];
+            }
+            else{
+                memset(frame, 0, 600);
+                *st = FLAG_RCV;
+                sizeInfo = 0;
+                frame[(*sizeInfo)++] = cmdFrame[0];
+            }
+            break;
+
+        case A_RCV:
+             if(cmdFrame[0] != FLAG){
+                frame[(*sizeInfo)++] = cmdFrame[0];
+            }
+            else if(cmdFrame[0] == FLAG){
+            
+                STOP = TRUE;
+                frame[(*sizeInfo)++] = cmdFrame[0];
+                reading = FALSE;
+            }
+            break;
+        
+        default:
+            break;
+        }
+
+        return STOP;
+}
+
 

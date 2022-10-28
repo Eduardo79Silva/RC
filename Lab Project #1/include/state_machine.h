@@ -11,3 +11,4 @@
 
 void stateMachine(unsigned char *buffer, STATE* state, unsigned int C);
 
+int dataStateMachine(unsigned char *frame, STATE* st, unsigned char *cmdFrame, unsigned char *reading, unsigned int *sizeInfo);
