@@ -8,6 +8,7 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
                       int nTries, int timeout, const char *filename)
 {
     LinkLayer link; // Link layer struct instance
+     int statistics = 1;
     //unsigned char buf[] = {0};
 
     strncpy(link.serialPort, serialPort, strlen(serialPort) + 1); // Copy serial port name to link layer struct
@@ -28,6 +29,10 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
     link.nRetransmissions = nTries; // Copy number of retransmissions to link layer struct
     link.timeout = timeout; // Copy timeout to link layer struct
     link.baudRate = baudRate; // Copy baud rate to link layer struct
+
+    clock_t start, end;
+    
+    start = clock();
 
     if (llopen(link) < 0) // If llopen fails
     {
@@ -91,11 +96,6 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
             return;
         }
 
-
-    if (llclose(0) < 0){ // If llclose fails
-        printf("\nError: Close failed!\n");
-        return;
-    }
 }
 else{
         // 1º chamar llread
@@ -133,6 +133,10 @@ else{
             }
         }
     }
+    end = clock();
+    float duration = ((float)end - start)/CLOCKS_PER_SEC;
+
+    llclose(&statistics, link, duration); // Close link layer
 }
 
 
