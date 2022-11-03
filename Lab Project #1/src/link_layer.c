@@ -168,25 +168,9 @@ int llopen(LinkLayer connectionParameters)
 }
 
 
+void buildIFrame(unsigned char *frame, unsigned char *newBuffer, unsigned char *buf, int bufSize, unsigned char BCC2){
 
-
-////////////////////////////////////////////////
-// LLWRITE
-////////////////////////////////////////////////
-
-int llwrite(const unsigned char *buf, int bufSize){
-
-    printf("\n###########################__WRITING__#############################\n\n");
-
-    //---Variables---
-
-    unsigned char frame[MAX_PAYLOAD_SIZE+6] = {0};
-    unsigned char BCC2 = BCC2creator(buf,bufSize);
-    unsigned char responses[5] = {0};
-    unsigned char newBuffer[bufSize+1];
-    int STOP = 0, ctrlRX = SHIFT(!NS, 7) | C_RR0;
-    int idx = 4;
-
+    
     //---Frame creation---
 
     frame[0] = FLAG;
@@ -199,7 +183,30 @@ int llwrite(const unsigned char *buf, int bufSize){
     for(int i = 0; i<=bufSize; i++){
         newBuffer[i] = buf[i];
     }
+
     newBuffer[bufSize] = BCC2;
+
+}
+
+
+////////////////////////////////////////////////
+// LLWRITE
+////////////////////////////////////////////////
+
+int llwrite(const unsigned char *buf, int bufSize){
+
+    printf("\n###########################__WRITING__#############################\n\n");
+    
+
+    //---Variables---
+     unsigned char frame[MAX_PAYLOAD_SIZE+6] = {0};
+    unsigned char BCC2 = BCC2creator(buf,bufSize);
+    unsigned char responses[5] = {0};
+    unsigned char newBuffer[bufSize+1];
+    int STOP = 0, ctrlRX = SHIFT(!NS, 7) | C_RR0;
+    int idx = 4;
+
+    buildIFrame(&frame,&newBuffer, buf, bufSize,BCC2);
 
     idx = byte_stuffing(&newBuffer, bufSize,  &frame, idx);
 
@@ -210,8 +217,12 @@ int llwrite(const unsigned char *buf, int bufSize){
     while(!STOP){
 
         if(!alarmEnabled){
+            for(int i = 0; i<idx; i++){
+                printf("%02x | ", frame[i]);
+            }
             write(fd, frame, idx);
             printf("\n#     Control Packet sent NS=%d\n", NS);
+            //sleep(1);
             startAlarm(timeout);
         }
         
@@ -229,6 +240,10 @@ int llwrite(const unsigned char *buf, int bufSize){
                 printf("\n#     RR: 0x%02x%02x%02x%02x%02x\n", responses[0], responses[1], responses[2], responses[3], responses[4]);
                 alarmEnabled = FALSE;
                 STOP = 1;
+                if(NS){
+                    NS = 0;
+                }
+                else {NS = 1;}
             }
         }
 
@@ -245,10 +260,9 @@ int llwrite(const unsigned char *buf, int bufSize){
 
     //---Change Sender Number---
 
-    if(NS){
-        NS = 0;
-    }
-    else {NS = 1;}
+    printf("NS = %d\n", NS);
+
+    
 
     printf("\n#################################################################\n\n");
 
@@ -265,7 +279,9 @@ int llread(unsigned char *packet, int *packetSize)
     printf("\n###########################__READING__#############################\n\n");
 
     unsigned char frame[600]={0}, responseFrame[5]={0}, BCC2=0x00, aux[400] = {0}, flagCount = 0, STOP = FALSE; 
-    int control = SHIFT(!NR, 6), idx = 0, sizeInfo = 0;
+    int control = SHIFT(NS, 6), idx = 0, sizeInfo = 0;
+
+    printf("OLD NR = %d\n", NR);
 
     
     unsigned char cmdFrame[1] = {0}; 
@@ -274,7 +290,7 @@ int llread(unsigned char *packet, int *packetSize)
     unsigned char reading = TRUE;
     
     
-    while (!STOP)
+    while (STOP == 0)
     { 
         if(reading){
             int frameBytes = read(fd, cmdFrame, 1); 
@@ -284,7 +300,7 @@ int llread(unsigned char *packet, int *packetSize)
     
         //-----STATE MACHINE-----
         
-        STOP = dataStateMachine(&frame, &st, &cmdFrame, &reading, &sizeInfo);
+        STOP = dataStateMachine(&frame, &st, &cmdFrame, &reading, &sizeInfo, NS);
 
     }
 
@@ -293,8 +309,35 @@ int llread(unsigned char *packet, int *packetSize)
     
     responseFrame[4] = FLAG;
 
+    if(STOP == 2){
+                responseFrame[2] = SHIFT(NR, 7) | C_RR0;
+                responseFrame[3] = BCC(responseFrame[1], responseFrame[2]);
+                write(fd, responseFrame, 5);
+                for(int i=0; i<5; i++){
+                    printf("#   %02X ", responseFrame[i]);
+                }
+                if(NR){
+                    NR = 0;
+                    NS = 1;
+                }       
+                 else {NR = 1; NS = 0;}
+                
+                printf("\n#     Duplicated I Frame received.\n");
+                return -1;
+    }
 
-    if(BCC(frame[1],frame[2]) != frame[3] || frame[2] != control){
+
+    if((BCC(frame[1],frame[2]) != frame[3] || frame[2] != control) && STOP != 2){
+        if(BCC(frame[1],frame[2]) != frame[3]){
+            printf("frame[0] = %02x\n", frame[0]);
+            printf("frame[1] = %02x\n", frame[1]);
+            printf("frame[2] = %02x\n", frame[2]);
+            printf("frame[3] = %02x\n", frame[3]);
+            printf("\n#     BCC error\n");
+        }
+        else{
+            printf("\n#     Control error\n");
+        }
         printf("\n#     Wrong I Frame - Protocol error\n");
         responseFrame[2] = SHIFT(NR, 7) | 0x01;
         responseFrame[3] = BCC(responseFrame[1], responseFrame[2]);
@@ -340,10 +383,19 @@ int llread(unsigned char *packet, int *packetSize)
 
     if(packet[len-2] == BCC2){
         if(packet[4]==0x01){
-            if(frame[5] == lastNum){
+            if(frame[5] == lastNum || STOP ==2){
                 responseFrame[2] = SHIFT(NR, 7) | C_RR0;
-                responseFrame[3] = (responseFrame[1], responseFrame[2]);
+                responseFrame[3] = BCC(responseFrame[1], responseFrame[2]);
                 write(fd, responseFrame, 5);
+                for(int i=0; i<5; i++){
+                    printf("#   %02X ", responseFrame[i]);
+                }
+                if(NR){
+                    NR = 0;
+                    NS = 1;
+                }       
+                 else {NR = 1; NS = 0;}
+                
                 printf("\n#     Duplicated I Frame received.\n");
                 return -1;
             }   
@@ -354,6 +406,7 @@ int llread(unsigned char *packet, int *packetSize)
         responseFrame[2] = SHIFT(NR, 7) | C_RR0;
         responseFrame[3] = BCC(responseFrame[1], responseFrame[2]);
         write(fd, responseFrame, 5);
+        printf("NEW NR = %d\n", NR);
         printf("\n#     Received I Frame.\n");
     }
     else {
@@ -372,8 +425,9 @@ int llread(unsigned char *packet, int *packetSize)
 
     if(NR){
         NR = 0;
+        NS = 1;
     }
-    else {NR = 1;}
+    else {NR = 1; NS = 0;}
 
 
     //--------------------Reset Variables--------------------

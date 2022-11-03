@@ -78,48 +78,119 @@ void stateMachine(unsigned char *buffer, STATE* state, unsigned int C) // State 
 
 }
 
-int dataStateMachine(unsigned char *frame, STATE* st, unsigned char *cmdFrame, unsigned char *reading, unsigned int *sizeInfo){
+int dataStateMachine(unsigned char *frame, STATE *st, unsigned char *cmdFrame, unsigned char *reading, unsigned int *sizeInfo, int NS){
     unsigned char STOP = FALSE;
-    switch (*st)
-        {
+    // switch (*st)
+    //     {
+    //     case START:
+    //         if(cmdFrame[0] == FLAG){
+    //             *st = FLAG_RCV;
+    //             frame[(*sizeInfo)++] = cmdFrame[0];
+    //         }
+    //         break;
+
+    //     case FLAG_RCV:
+    //         if(cmdFrame[0] != FLAG){
+            
+    //             *st = A_RCV;
+    //             frame[(*sizeInfo)++] = cmdFrame[0];
+    //         }
+    //         else{
+    //             memset(frame, 0, 600);
+    //             *st = FLAG_RCV;
+    //             sizeInfo = 0;
+    //             frame[(*sizeInfo)++] = cmdFrame[0];
+    //         }
+    //         break;
+
+    //     case A_RCV:
+            //  if(cmdFrame[0] != FLAG){
+            //     frame[(*sizeInfo)++] = cmdFrame[0];
+            // }
+            // else if(cmdFrame[0] == FLAG){
+            
+            //     STOP = TRUE;
+            //     frame[(*sizeInfo)++] = cmdFrame[0];
+            //     reading = FALSE;
+            // }
+            // break;
+        
+    //     default:
+    //         break;
+    //     }
+
+    //     return STOP;
+
+
+
+    switch(*st)
+    {
         case START:
-            if(cmdFrame[0] == FLAG){
+           // printf("State 0\n");
+            if (cmdFrame[0] == 0x7E) {
                 *st = FLAG_RCV;
                 frame[(*sizeInfo)++] = cmdFrame[0];
+                printf("START: %02lx\n", cmdFrame[0]);
+                
             }
-            break;
-
+            break;   
         case FLAG_RCV:
-            if(cmdFrame[0] != FLAG){
-            
+            //printf("State 1\n");
+            if (cmdFrame[0] == A_TX) {
                 *st = A_RCV;
                 frame[(*sizeInfo)++] = cmdFrame[0];
+                printf("FLAG: %02lx\n", cmdFrame[0]);
             }
-            else{
+            else if( cmdFrame[0] == FLAG){
                 memset(frame, 0, 600);
                 *st = FLAG_RCV;
-                sizeInfo = 0;
+                *sizeInfo = 0;
                 frame[(*sizeInfo)++] = cmdFrame[0];
+                printf("FLAG IF FLAG: %02lx\n", cmdFrame[0]);
             }
             break;
-
         case A_RCV:
-             if(cmdFrame[0] != FLAG){
+           // printf("State 2\n");
+            if (cmdFrame[0] != FLAG) {
+                *st = C_RCV;
                 frame[(*sizeInfo)++] = cmdFrame[0];
-            }
-            else if(cmdFrame[0] == FLAG){
-            
-                STOP = TRUE;
-                frame[(*sizeInfo)++] = cmdFrame[0];
-                reading = FALSE;
+                printf("C: %02lx\n", cmdFrame[0]);
+                // printf("C: %02lx\n", cmdFrame[0]);
+                // printf("NS: %d\n", NS);
+                if (!((cmdFrame[0] == 0 && NS == 0) || (cmdFrame[0] == 0x40 && NS == 1) )) {
+                    printf("Duplicated frame\n");
+                    return 2;
+                }
             }
             break;
+        case C_RCV: 
+            //printf("State 3\n");
+            if (cmdFrame[0] == BCC(frame[2], frame[1])) {
+                *st = PACKET_RCV;
+                frame[(*sizeInfo)++] = cmdFrame[0];
+                printf("BCC: %02lx\n", cmdFrame[0]);
+            } else if (cmdFrame[0] == FLAG){
+                *st = FLAG_RCV;
+            } 
+            break;
+        case PACKET_RCV:
+            //printf("State 4\n");
+            if(cmdFrame[0] != FLAG){
+                frame[(*sizeInfo)++] = cmdFrame[0];
+                }
+            else if(cmdFrame[0] == FLAG){
         
+            STOP = TRUE;
+            frame[(*sizeInfo)++] = cmdFrame[0];
+            printf("STOP: %02lx\n", cmdFrame[0]);
+            reading = FALSE;
+            }
+            break;
         default:
             break;
-        }
+    }
 
-        return STOP;
+    return STOP;
 }
 
 int closeStateMachine(unsigned char *cmdFrame, unsigned char *responses, int result, int fd){

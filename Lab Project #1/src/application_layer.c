@@ -43,23 +43,16 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
 
     if(link.role == LlTx){
 
-        //CREATING THE START CONTROL PACKET 
-        char size[255];
         int bufSize = 0;
-        struct stat file;
-        stat(filename, &file);
-        sprintf(size,"%02lx", file.st_size);
-        int l = strlen(size)/2;
-        //int fileSize = file.st_size;
         unsigned char packet[MAX_PACKET_SIZE];
-        unsigned char bytes[200];
+        unsigned char bytes[8];
         unsigned char finished = 0;
         int sizePacket = 0;
-        int nBytes = 200, currentByte=0, pos=0, id = 0;
+        int nBytes = 8, currentByte=0, pos=0, id = 0;
         FILE *fileptr;
         
         bufSize = createCtrlPacket(filename, 1, &packet);
-        printf("Buffer size: %d\n", 5+l+strlen(filename));
+        printf("Buffer size: %d\n", bufSize);
 
         if(llwrite(packet, bufSize) == -1){
             printf("Error: llwrite failed!\n");
@@ -67,6 +60,7 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
         }
         printf("Start Control Packet sent!\n");
 
+        
         fileptr = fopen(filename, "rb");
 
         while(!finished){
@@ -89,9 +83,9 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
                 if( checkError == -1) 
                     return;
                 
-                pos = 0;
                 memset(bytes,0,sizeof(bytes));
                 memset(packet,0,sizeof(packet));
+                pos = 0;
             }
             bytes[pos++] = currentByte;
         }

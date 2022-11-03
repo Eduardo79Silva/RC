@@ -30,6 +30,7 @@ typedef enum
     A_RCV,
     C_RCV,
     BCC_OK,
+    PACKET_RCV,
     STOP_ST,
     INVALID
 } STATE;
