@@ -31,6 +31,7 @@ int nRetransmissions = 0;
 
 int NS = 0;
 int NR = 1;
+int packetCounter = 0;
 
 extern int alarmEnabled;
 
@@ -391,8 +392,6 @@ int llread(unsigned char *packet, int *packetSize)
     if(packet[len-2] == BCC2){
         if(packet[4]==0x01){
             if(packet[5] == lastNum || STOP ==2){
-                printf("frame[5] = %02x\n", frame[5]);
-                printf("lastNum = %02x\n", lastNum);
                 responseFrame[2] = SHIFT(NR, 7) | C_RR0;
                 responseFrame[3] = BCC(responseFrame[1], responseFrame[2]);
                 write(fd, responseFrame, 5);
@@ -404,9 +403,6 @@ int llread(unsigned char *packet, int *packetSize)
                     NS = 1;
                 }       
                  else {NR = 1; NS = 0;}
-
-                 printf("2nd STOP.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.\n\n\n\n\n");
-                
                 printf("\n#     Duplicated I Frame received.\n");
                 return -1;
             }   
@@ -417,7 +413,7 @@ int llread(unsigned char *packet, int *packetSize)
         responseFrame[2] = SHIFT(NR, 7) | C_RR0;
         responseFrame[3] = BCC(responseFrame[1], responseFrame[2]);
         write(fd, responseFrame, 5);
-        printf("NEW NR = %d\n", NR);
+        packetCounter++;
         printf("\n#     Received I Frame.\n");
     }
     else {
@@ -600,7 +596,7 @@ int llclose(int showStatistics, LinkLayer connectionParameters, float runTime)
     if(showStatistics){
         printf("\n###########################__STATS__#############################\n\n");
 
-        printf("\n#    Number of Packets: %d\n#    Size of data packets: %d\n#    Total time: %f\n#    Average time/packet: %f\n", lastNum, 200, runTime, runTime/200.0);
+        printf("\n#    Number of Packets: %d\n#    Size of data packets: %d\n#    Total time: %f\n#    Average time/packet: %f\n", packetCounter, 200, runTime, runTime/200.0);
 
         printf("\n#################################################################\n");
     }
