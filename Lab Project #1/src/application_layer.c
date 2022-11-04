@@ -45,10 +45,10 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
 
         int bufSize = 0;
         unsigned char packet[MAX_PACKET_SIZE];
-        unsigned char bytes[8];
+        unsigned char bytes[32];
         unsigned char finished = 0;
         int sizePacket = 0;
-        int nBytes = 8, currentByte=0, pos=0, id = 0;
+        int nBytes = 32, currentByte=0, pos=0, id = 0;
         FILE *fileptr;
         
         bufSize = createCtrlPacket(filename, 1, &packet);

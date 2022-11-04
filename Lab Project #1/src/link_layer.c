@@ -281,7 +281,8 @@ int llread(unsigned char *packet, int *packetSize)
     unsigned char frame[600]={0}, responseFrame[5]={0}, BCC2=0x00, aux[400] = {0}, flagCount = 0, STOP = FALSE; 
     int control = SHIFT(NS, 6), idx = 0, sizeInfo = 0;
 
-    printf("OLD NR = %d\n", NR);
+   
+    //printf("Last num: %d\n", lastNum);
 
     
     unsigned char cmdFrame[1] = {0}; 
@@ -310,6 +311,7 @@ int llread(unsigned char *packet, int *packetSize)
     responseFrame[4] = FLAG;
 
     if(STOP == 2){
+                printf("1st STOP\n");
                 responseFrame[2] = SHIFT(NR, 7) | C_RR0;
                 responseFrame[3] = BCC(responseFrame[1], responseFrame[2]);
                 write(fd, responseFrame, 5);
@@ -381,9 +383,16 @@ int llread(unsigned char *packet, int *packetSize)
         }
     }
 
+    for (int i = 0; i < idx; i++)
+    {
+        printf("%02x | ", packet[i]);
+    }
+
     if(packet[len-2] == BCC2){
         if(packet[4]==0x01){
-            if(frame[5] == lastNum || STOP ==2){
+            if(packet[5] == lastNum || STOP ==2){
+                printf("frame[5] = %02x\n", frame[5]);
+                printf("lastNum = %02x\n", lastNum);
                 responseFrame[2] = SHIFT(NR, 7) | C_RR0;
                 responseFrame[3] = BCC(responseFrame[1], responseFrame[2]);
                 write(fd, responseFrame, 5);
@@ -395,6 +404,8 @@ int llread(unsigned char *packet, int *packetSize)
                     NS = 1;
                 }       
                  else {NR = 1; NS = 0;}
+
+                 printf("2nd STOP.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.\n\n\n\n\n");
                 
                 printf("\n#     Duplicated I Frame received.\n");
                 return -1;

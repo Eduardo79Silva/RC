@@ -130,7 +130,7 @@ int dataStateMachine(unsigned char *frame, STATE *st, unsigned char *cmdFrame, u
             if (cmdFrame[0] == 0x7E) {
                 *st = FLAG_RCV;
                 frame[(*sizeInfo)++] = cmdFrame[0];
-                printf("START: %02lx\n", cmdFrame[0]);
+                //printf("START: %02lx\n", cmdFrame[0]);
                 
             }
             break;   
@@ -139,14 +139,14 @@ int dataStateMachine(unsigned char *frame, STATE *st, unsigned char *cmdFrame, u
             if (cmdFrame[0] == A_TX) {
                 *st = A_RCV;
                 frame[(*sizeInfo)++] = cmdFrame[0];
-                printf("FLAG: %02lx\n", cmdFrame[0]);
+                //printf("FLAG: %02lx\n", cmdFrame[0]);
             }
             else if( cmdFrame[0] == FLAG){
                 memset(frame, 0, 600);
                 *st = FLAG_RCV;
                 *sizeInfo = 0;
                 frame[(*sizeInfo)++] = cmdFrame[0];
-                printf("FLAG IF FLAG: %02lx\n", cmdFrame[0]);
+                //printf("FLAG IF FLAG: %02lx\n", cmdFrame[0]);
             }
             break;
         case A_RCV:
@@ -154,7 +154,7 @@ int dataStateMachine(unsigned char *frame, STATE *st, unsigned char *cmdFrame, u
             if (cmdFrame[0] != FLAG) {
                 *st = C_RCV;
                 frame[(*sizeInfo)++] = cmdFrame[0];
-                printf("C: %02lx\n", cmdFrame[0]);
+                //printf("C: %02lx\n", cmdFrame[0]);
                 // printf("C: %02lx\n", cmdFrame[0]);
                 // printf("NS: %d\n", NS);
                 if (!((cmdFrame[0] == 0 && NS == 0) || (cmdFrame[0] == 0x40 && NS == 1) )) {
@@ -168,7 +168,7 @@ int dataStateMachine(unsigned char *frame, STATE *st, unsigned char *cmdFrame, u
             if (cmdFrame[0] == BCC(frame[2], frame[1])) {
                 *st = PACKET_RCV;
                 frame[(*sizeInfo)++] = cmdFrame[0];
-                printf("BCC: %02lx\n", cmdFrame[0]);
+                //printf("BCC: %02lx\n", cmdFrame[0]);
             } else if (cmdFrame[0] == FLAG){
                 *st = FLAG_RCV;
             } 
@@ -182,7 +182,7 @@ int dataStateMachine(unsigned char *frame, STATE *st, unsigned char *cmdFrame, u
         
             STOP = TRUE;
             frame[(*sizeInfo)++] = cmdFrame[0];
-            printf("STOP: %02lx\n", cmdFrame[0]);
+            //printf("STOP: %02lx\n", cmdFrame[0]);
             reading = FALSE;
             }
             break;
